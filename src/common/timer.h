@@ -5,6 +5,7 @@
 #define	_TIMER_H_
 
 #include "../common/cbasetypes.h"
+#include <time.h>
 
 #define DIFF_TICK(a,b) ((int)((a)-(b)))
 
@@ -50,6 +51,9 @@ int settick_timer(int tid, unsigned int tick);
 int add_timer_func_list(TimerFunc func, char* name);
 
 unsigned long get_uptime(void);
+
+//transform a timestamp to string
+const char* timestamp2string(char* str, size_t size, time_t timestamp, const char* format);
 
 int do_timer(unsigned int tick);
 void timer_init(void);

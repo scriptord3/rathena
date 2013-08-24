@@ -737,13 +737,14 @@ int chrif_charselectreq(struct map_session_data* sd, uint32 s_ip) {
 
 	chrif_check(-1);
 
-	WFIFOHEAD(char_fd,18);
+	WFIFOHEAD(char_fd,19);
 	WFIFOW(char_fd, 0) = 0x2b02;
 	WFIFOL(char_fd, 2) = sd->bl.id;
 	WFIFOL(char_fd, 6) = sd->login_id1;
 	WFIFOL(char_fd,10) = sd->login_id2;
 	WFIFOL(char_fd,14) = htonl(s_ip);
-	WFIFOSET(char_fd,18);
+	WFIFOB(char_fd,18) = sd->packet_ver;
+	WFIFOSET(char_fd,19);
 
 	return 0;
 }

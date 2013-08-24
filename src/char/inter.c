@@ -9,6 +9,8 @@
 #include "../common/socket.h"
 #include "../common/timer.h"
 #include "char.h"
+#include "char_logif.h"
+#include "char_mapif.h"
 #include "inter.h"
 #include "int_party.h"
 #include "int_guild.h"
@@ -389,7 +391,7 @@ void mapif_parse_accinfo(int fd) {
 	account_id = atoi(query);
 
 	if (account_id < START_ACCOUNT_NUM) {	// is string
-		if ( SQL_ERROR == Sql_Query(sql_handle, "SELECT `account_id`,`name`,`class`,`base_level`,`job_level`,`online` FROM `%s` WHERE `name` LIKE '%s' LIMIT 10", char_db, query_esq)
+		if ( SQL_ERROR == Sql_Query(sql_handle, "SELECT `account_id`,`name`,`class`,`base_level`,`job_level`,`online` FROM `%s` WHERE `name` LIKE '%s' LIMIT 10", schema_config.char_db, query_esq)
 				|| Sql_NumRows(sql_handle) == 0 ) {
 			if( Sql_NumRows(sql_handle) == 0 ) {
 				inter_to_fd(fd, u_fd, aid, "No matches were found for your criteria, '%s'",query);
@@ -523,12 +525,12 @@ int inter_accreg_tosql(int account_id, int char_id, struct accreg* reg, int type
 	switch( type )
 	{
 	case 3: //Char Reg
-		if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `type`=3 AND `char_id`='%d'", reg_db, char_id) )
+		if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `type`=3 AND `char_id`='%d'", schema_config.reg_db, char_id) )
 			Sql_ShowDebug(sql_handle);
 		account_id = 0;
 		break;
 	case 2: //Account Reg
-		if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `type`=2 AND `account_id`='%d'", reg_db, account_id) )
+		if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `type`=2 AND `account_id`='%d'", schema_config.reg_db, account_id) )
 			Sql_ShowDebug(sql_handle);
 		char_id = 0;
 		break;
@@ -544,7 +546,7 @@ int inter_accreg_tosql(int account_id, int char_id, struct accreg* reg, int type
 		return 0;
 
 	StringBuf_Init(&buf);
-	StringBuf_Printf(&buf, "INSERT INTO `%s` (`type`,`account_id`,`char_id`,`str`,`value`) VALUES ", reg_db);
+	StringBuf_Printf(&buf, "INSERT INTO `%s` (`type`,`account_id`,`char_id`,`str`,`value`) VALUES ", schema_config.reg_db);
 
 	for( i = 0; i < reg->reg_num; ++i ) {
 		r = &reg->reg[i];
@@ -590,11 +592,11 @@ int inter_accreg_fromsql(int account_id,int char_id, struct accreg *reg, int typ
 	switch( type )
 	{
 	case 3: //char reg
-		if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `str`, `value` FROM `%s` WHERE `type`=3 AND `char_id`='%d'", reg_db, char_id) )
+		if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `str`, `value` FROM `%s` WHERE `type`=3 AND `char_id`='%d'", schema_config.reg_db, char_id) )
 			Sql_ShowDebug(sql_handle);
 		break;
 	case 2: //account reg
-		if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `str`, `value` FROM `%s` WHERE `type`=2 AND `account_id`='%d'", reg_db, account_id) )
+		if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `str`, `value` FROM `%s` WHERE `type`=2 AND `account_id`='%d'", schema_config.reg_db, account_id) )
 			Sql_ShowDebug(sql_handle);
 		break;
 	case 1: //account2 reg
@@ -669,7 +671,7 @@ static int inter_config_read(const char* cfgName)
 		else if(!strcmpi(w1,"party_share_level"))
 			party_share_level = (unsigned int)atof(w2);
 		else if(!strcmpi(w1,"log_inter"))
-			log_inter = atoi(w2);
+			charserv_config.log_inter = atoi(w2);
 		else if(!strcmpi(w1,"import"))
 			inter_config_read(w2);
 	}
@@ -692,7 +694,7 @@ int inter_log(char* fmt, ...)
 	va_end(ap);
 
 	Sql_EscapeStringLen(sql_handle, esc_str, str, strnlen(str, sizeof(str)));
-	if( SQL_ERROR == Sql_Query(sql_handle, "INSERT INTO `%s` (`time`, `log`) VALUES (NOW(),  '%s')", interlog_db, esc_str) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "INSERT INTO `%s` (`time`, `log`) VALUES (NOW(),  '%s')", schema_config.interlog_db, esc_str) )
 		Sql_ShowDebug(sql_handle);
 
 	return 0;
@@ -934,7 +936,7 @@ int mapif_parse_WisRequest(int fd)
 	safestrncpy(name, (char*)RFIFOP(fd,28), NAME_LENGTH); //Received name may be too large and not contain \0! [Skotlex]
 
 	Sql_EscapeStringLen(sql_handle, esc_name, name, strnlen(name, NAME_LENGTH));
-	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `name` FROM `%s` WHERE `name`='%s'", char_db, esc_name) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `name` FROM `%s` WHERE `name`='%s'", schema_config.char_db, esc_name) )
 		Sql_ShowDebug(sql_handle);
 
 	// search if character exists before to ask all map-servers
@@ -1088,15 +1090,15 @@ int mapif_parse_NameChangeRequest(int fd)
 	name = (char*)RFIFOP(fd,11);
 
 	// Check Authorised letters/symbols in the name
-	if (char_name_option == 1) { // only letters/symbols in char_name_letters are authorised
+	if (charserv_config.char_name_option == 1) { // only letters/symbols in char_name_letters are authorised
 		for (i = 0; i < NAME_LENGTH && name[i]; i++)
-		if (strchr(char_name_letters, name[i]) == NULL) {
+		if (strchr(charserv_config.char_name_letters, name[i]) == NULL) {
 			mapif_namechange_ack(fd, account_id, char_id, type, 0, name);
 			return 0;
 		}
-	} else if (char_name_option == 2) { // letters/symbols in char_name_letters are forbidden
+	} else if (charserv_config.char_name_option == 2) { // letters/symbols in char_name_letters are forbidden
 		for (i = 0; i < NAME_LENGTH && name[i]; i++)
-		if (strchr(char_name_letters, name[i]) != NULL) {
+		if (strchr(charserv_config.char_name_letters, name[i]) != NULL) {
 			mapif_namechange_ack(fd, account_id, char_id, type, 0, name);
 			return 0;
 		}

@@ -19,7 +19,7 @@
 	#include "../common/winapi.h"
 #else
 	#include <errno.h>
-	#include <sys/socket.h>
+	#include <sys/select.h>
 	#include <netinet/in.h>
 	#include <netinet/tcp.h>
 	#include <net/if.h>
@@ -668,7 +668,7 @@ int realloc_writefifo(int fd, size_t addition)
 /// advance the RFIFO cursor (marking 'len' bytes as processed)
 int RFIFOSKIP(int fd, size_t len)
 {
-    struct socket_data *s;
+	struct socket_data *s;
 
 	if ( !session_isActive(fd) )
 		return 0;

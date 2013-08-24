@@ -53,12 +53,12 @@ bool opt_has_next_value(const char* option, int i, int argc)
  */
 void display_versionscreen(bool do_exit)
 {
-    ShowInfo(CL_WHITE"rAthena SVN version: %s" CL_RESET"\n", get_svn_revision());
-    ShowInfo(CL_GREEN"Website/Forum:"CL_RESET"\thttp://rathena.org/\n");
-    ShowInfo(CL_GREEN"IRC Channel:"CL_RESET"\tirc://irc.rizon.net/#rathena\n");
-    ShowInfo("Open "CL_WHITE"readme.txt"CL_RESET" for more information.\n");
-    if (do_exit)
-	exit(EXIT_SUCCESS);
+	ShowInfo(CL_WHITE"rAthena SVN version: %s" CL_RESET"\n", get_svn_revision());
+	ShowInfo(CL_GREEN"Website/Forum:"CL_RESET"\thttp://rathena.org/\n");
+	ShowInfo(CL_GREEN"IRC Channel:"CL_RESET"\tirc://irc.rizon.net/#rathena\n");
+	ShowInfo("Open "CL_WHITE"readme.txt"CL_RESET" for more information.\n");
+	if (do_exit)
+		exit(EXIT_SUCCESS);
 }
 
 /*

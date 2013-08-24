@@ -1,0 +1,154 @@
+
+#include "../common/mmo.h" //cbasetype + NAME_LENGTH
+#include "../common/showmsg.h" //show notice
+#include "../common/md5calc.h"
+#include "../common/ers.h"
+#include "../common/cli.h"
+#include "../common/timer.h"
+#include "login.h"
+#include "logincnslif.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/*======================================================
+ * Login-Server help starting option info
+ *------------------------------------------------------*/
+void display_helpscreen(bool do_exit)
+{
+	ShowInfo("Usage: %s [options]\n", SERVER_NAME);
+	ShowInfo("\n");
+	ShowInfo("Options:\n");
+	ShowInfo("  -?, -h [--help]\t\tDisplays this help screen.\n");
+	ShowInfo("  -v [--version]\t\tDisplays the server's version.\n");
+	ShowInfo("  --run-once\t\t\tCloses server after loading (testing).\n");
+	ShowInfo("  --login-config <file>\t\tAlternative login-server configuration.\n");
+	ShowInfo("  --lan-config <file>\t\tAlternative lag configuration.\n");
+	ShowInfo("  --msg-config <file>\t\tAlternative message configuration.\n");
+	if( do_exit )
+		exit(EXIT_SUCCESS);
+}
+
+
+/*
+ * Read the option specify in command line
+ * and assign the confs used by the different server
+ * exit on failure or return true
+ */
+int cnsl_get_options(int argc, char ** argv)
+{
+	int i = 0;
+	for (i = 1; i < argc; i++) {
+		const char* arg = argv[i];
+
+		if (arg[0] != '-' && (arg[0] != '/' || arg[1] == '-')) {// -, -- and /
+			ShowError("Unknown option '%s'.\n", argv[i]);
+			exit(EXIT_FAILURE);
+		} else if ((++arg)[0] == '-') {// long option
+			arg++;
+
+			if (strcmp(arg, "help") == 0) {
+				display_helpscreen(true);
+			} else if (strcmp(arg, "version") == 0) {
+				display_versionscreen(true);
+			} else if (strcmp(arg, "run-once") == 0) // close the map-server as soon as its done.. for testing [Celest]
+			{
+				runflag = CORE_ST_STOP;
+			} else if (SERVER_TYPE & (ATHENA_SERVER_LOGIN)) { //login
+				if (strcmp(arg, "lan-config") == 0) {
+					if (opt_has_next_value(arg, i, argc))
+						LAN_CONF_NAME = argv[++i];
+				}
+				if (strcmp(arg, "login-config") == 0) {
+					if (opt_has_next_value(arg, i, argc))
+						LOGIN_CONF_NAME = argv[++i];
+				}
+				if (strcmp(arg, "msg-config") == 0) {
+					if (opt_has_next_value(arg, i, argc))
+					MSG_CONF_NAME_EN = argv[++i];
+				} else {
+					ShowError("Unknown option '%s'.\n", argv[i]);
+					exit(EXIT_FAILURE);
+				}
+			}
+		} else switch (arg[0]) {// short option
+			case '?':
+			case 'h':
+				display_helpscreen(true);
+				break;
+			case 'v':
+				display_versionscreen(true);
+				break;
+			default:
+				ShowError("Unknown option '%s'.\n", argv[i]);
+				exit(EXIT_FAILURE);
+		}
+	}
+	return 1;
+}
+
+//-----------------------
+// Console Command Parser [Wizputer]
+//-----------------------
+int parse_console(const char* buf){
+	char type[64];
+	char command[64];
+	int n=0;
+
+	if( ( n = sscanf(buf, "%127[^:]:%255[^\n\r]", type, command) ) < 2 ){
+		if((n = sscanf(buf, "%63[^\n]", type))<1) return -1; //nothing to do no arg
+	}
+	if( n != 2 ){ //end string
+		ShowNotice("Type: '%s'\n",type);
+		command[0] = '\0';
+	}
+	else
+		ShowNotice("Type of command: '%s' || Command: '%s'\n",type,command);
+
+	if( n == 2 ){
+		if(strcmpi("server", type) == 0 ){
+			if( strcmpi("shutdown", command) == 0 || strcmpi("exit", command) == 0 || strcmpi("quit", command) == 0 ){
+				runflag = 0;
+			}
+			else if( strcmpi("alive", command) == 0 || strcmpi("status", command) == 0 )
+				ShowInfo(CL_CYAN"Console: "CL_BOLD"I'm Alive."CL_RESET"\n");
+		}
+		if( strcmpi("create",type) == 0 )
+		{
+			char username[NAME_LENGTH], password[NAME_LENGTH], md5password[32+1], sex; //23+1 plaintext 32+1 md5
+			bool md5 = 0;
+			if( sscanf(command, "%23s %23s %c", username, password, &sex) < 3 || strnlen(username, sizeof(username)) < 4 || strnlen(password, sizeof(password)) < 1 ){
+				ShowWarning("Console: Invalid parameters for '%s'. Usage: %s <username> <password> <sex:F/M>\n", type, type);
+				return 0;
+			}
+			if( login_config.use_md5_passwds ){
+				MD5_String(password,md5password);
+				md5 = 1;
+			}
+			if( mmo_auth_new(username,(md5?md5password:password), TOUPPER(sex), "0.0.0.0") != -1 ){
+				ShowError("Console: Account creation failed.\n");
+				return 0;
+			}
+			ShowStatus("Console: Account '%s' created successfully.\n", username);
+		}
+	}
+	else if( strcmpi("ers_report", type) == 0 ){
+		ers_report();
+	}
+	else if( strcmpi("help", type) == 0 ){
+		ShowInfo("Available commands:\n");
+		ShowInfo("\t server:shutdown => Stops the server.\n");
+		ShowInfo("\t server:alive => Checks if the server is running.\n");
+		ShowInfo("\t ers_report => Displays database usage.\n");
+		ShowInfo("\t create:<username> <password> <sex:M|F> => Creates a new account.\n");
+	}
+	return 0;
+}
+
+void do_init_logincnslif(void){
+	if( login_config.console ) {
+		add_timer_func_list(parse_console_timer, "parse_console_timer");
+		add_timer_interval(gettick()+1000, parse_console_timer, 0, 0, 1000); //start in 1s each 1sec
+	}
+}

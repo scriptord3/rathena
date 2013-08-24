@@ -10,6 +10,7 @@
 #include "../common/strlib.h"
 #include "../common/timer.h"
 #include "char.h"
+#include "char_mapif.h"
 #include "inter.h"
 #include "int_guild.h"
 
@@ -72,7 +73,7 @@ static int guild_save_timer(int tid, unsigned int tick, int id, intptr_t data)
 
 		if( g->save_flag == GS_REMOVE )
 		{// Nothing to save, guild is ready for removal.
-			if (save_log)
+			if (charserv_config.save_log)
 				ShowInfo("Guild Unloaded (%d - %s)\n", g->guild_id, g->name);
 			db_remove(guild_db_, key);
 		}
@@ -84,15 +85,15 @@ static int guild_save_timer(int tid, unsigned int tick, int id, intptr_t data)
 
 	state = guild_db_->size(guild_db_);
 	if( state < 1 ) state = 1; //Calculate the time slot for the next save.
-	add_timer(tick  + autosave_interval/state, guild_save_timer, 0, 0);
+	add_timer(tick  + (charserv_config.autosave_interval)/state, guild_save_timer, 0, 0);
 	return 0;
 }
 
 int inter_guild_removemember_tosql(int account_id, int char_id)
 {
-	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE from `%s` where `account_id` = '%d' and `char_id` = '%d'", guild_member_db, account_id, char_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE from `%s` where `account_id` = '%d' and `char_id` = '%d'", schema_config.guild_member_db, account_id, char_id) )
 		Sql_ShowDebug(sql_handle);
-	if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `guild_id` = '0' WHERE `char_id` = '%d'", char_db, char_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `guild_id` = '0' WHERE `char_id` = '%d'", schema_config.char_db, char_id) )
 		Sql_ShowDebug(sql_handle);
 	return 0;
 }
@@ -140,7 +141,7 @@ int inter_guild_tosql(struct guild *g,int flag)
 		if( SQL_ERROR == Sql_Query(sql_handle, "INSERT INTO `%s` "
 			"(`name`,`master`,`guild_lv`,`max_member`,`average_lv`,`char_id`) "
 			"VALUES ('%s', '%s', '%d', '%d', '%d', '%d')",
-			guild_db, esc_name, esc_master, g->guild_lv, g->max_member, g->average_lv, g->member[0].char_id) )
+			schema_config.guild_db, esc_name, esc_master, g->guild_lv, g->max_member, g->average_lv, g->member[0].char_id) )
 		{
 			Sql_ShowDebug(sql_handle);
 			if (g->guild_id == -1)
@@ -160,7 +161,7 @@ int inter_guild_tosql(struct guild *g,int flag)
 		bool add_comma = false;
 
 		StringBuf_Init(&buf);
-		StringBuf_Printf(&buf, "UPDATE `%s` SET ", guild_db);
+		StringBuf_Printf(&buf, "UPDATE `%s` SET ", schema_config.guild_db);
 
 		if (flag & GS_EMBLEM)
 		{
@@ -240,14 +241,14 @@ int inter_guild_tosql(struct guild *g,int flag)
 				Sql_EscapeStringLen(sql_handle, esc_name, m->name, strnlen(m->name, NAME_LENGTH));
 				if( SQL_ERROR == Sql_Query(sql_handle, "REPLACE INTO `%s` (`guild_id`,`account_id`,`char_id`,`hair`,`hair_color`,`gender`,`class`,`lv`,`exp`,`exp_payper`,`online`,`position`,`name`) "
 					"VALUES ('%d','%d','%d','%d','%d','%d','%d','%d','%"PRIu64"','%d','%d','%d','%s')",
-					guild_member_db, g->guild_id, m->account_id, m->char_id,
+					schema_config.guild_member_db, g->guild_id, m->account_id, m->char_id,
 					m->hair, m->hair_color, m->gender,
 					m->class_, m->lv, m->exp, m->exp_payper, m->online, m->position, esc_name) )
 					Sql_ShowDebug(sql_handle);
 				if (m->modified&GS_MEMBER_NEW || new_guild == 1)
 				{
 					if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `guild_id` = '%d' WHERE `char_id` = '%d'",
-						char_db, g->guild_id, m->char_id) )
+						schema_config.char_db, g->guild_id, m->char_id) )
 						Sql_ShowDebug(sql_handle);
 				}
 				m->modified = GS_MEMBER_UNMODIFIED;
@@ -264,7 +265,7 @@ int inter_guild_tosql(struct guild *g,int flag)
 				continue;
 			Sql_EscapeStringLen(sql_handle, esc_name, p->name, strnlen(p->name, NAME_LENGTH));
 			if( SQL_ERROR == Sql_Query(sql_handle, "REPLACE INTO `%s` (`guild_id`,`position`,`name`,`mode`,`exp_mode`) VALUES ('%d','%d','%s','%d','%d')",
-				guild_position_db, g->guild_id, i, esc_name, p->mode, p->exp_mode) )
+				schema_config.guild_position_db, g->guild_id, i, esc_name, p->mode, p->exp_mode) )
 				Sql_ShowDebug(sql_handle);
 			p->modified = GS_POSITION_UNMODIFIED;
 		}
@@ -277,7 +278,7 @@ int inter_guild_tosql(struct guild *g,int flag)
 		// their info changed, not to mention this would also mess up oppositions!
 		// [Skotlex]
 		//if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id`='%d' OR `alliance_id`='%d'", guild_alliance_db, g->guild_id, g->guild_id) )
-		if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id`='%d'", guild_alliance_db, g->guild_id) )
+		if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id`='%d'", schema_config.guild_alliance_db, g->guild_id) )
 		{
 			Sql_ShowDebug(sql_handle);
 		}
@@ -292,7 +293,7 @@ int inter_guild_tosql(struct guild *g,int flag)
 					Sql_EscapeStringLen(sql_handle, esc_name, a->name, strnlen(a->name, NAME_LENGTH));
 					if( SQL_ERROR == Sql_Query(sql_handle, "REPLACE INTO `%s` (`guild_id`,`opposition`,`alliance_id`,`name`) "
 						"VALUES ('%d','%d','%d','%s')",
-						guild_alliance_db, g->guild_id, a->opposition, a->guild_id, esc_name) )
+						schema_config.guild_alliance_db, g->guild_id, a->opposition, a->guild_id, esc_name) )
 						Sql_ShowDebug(sql_handle);
 				}
 			}
@@ -310,7 +311,7 @@ int inter_guild_tosql(struct guild *g,int flag)
 				Sql_EscapeStringLen(sql_handle, esc_name, e->name, strnlen(e->name, NAME_LENGTH));
 				Sql_EscapeStringLen(sql_handle, esc_mes, e->mes, strnlen(e->mes, sizeof(e->mes)));
 				if( SQL_ERROR == Sql_Query(sql_handle, "REPLACE INTO `%s` (`guild_id`,`account_id`,`name`,`mes`) "
-					"VALUES ('%d','%d','%s','%s')", guild_expulsion_db, g->guild_id, e->account_id, esc_name, esc_mes) )
+					"VALUES ('%d','%d','%s','%s')", schema_config.guild_expulsion_db, g->guild_id, e->account_id, esc_name, esc_mes) )
 					Sql_ShowDebug(sql_handle);
 			}
 		}
@@ -322,13 +323,13 @@ int inter_guild_tosql(struct guild *g,int flag)
 		for(i=0;i<MAX_GUILDSKILL;i++){
 			if (g->skill[i].id>0 && g->skill[i].lv>0){
 				if( SQL_ERROR == Sql_Query(sql_handle, "REPLACE INTO `%s` (`guild_id`,`id`,`lv`) VALUES ('%d','%d','%d')",
-					guild_skill_db, g->guild_id, g->skill[i].id, g->skill[i].lv) )
+					schema_config.guild_skill_db, g->guild_id, g->skill[i].id, g->skill[i].lv) )
 					Sql_ShowDebug(sql_handle);
 			}
 		}
 	}
 
-	if (save_log)
+	if (charserv_config.save_log)
 		ShowInfo("Saved guild (%d - %s):%s\n",g->guild_id,g->name,t_info);
 	return 1;
 }
@@ -354,7 +355,7 @@ struct guild * inter_guild_fromsql(int guild_id)
 #endif
 
 	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT g.`name`,c.`name`,g.`guild_lv`,g.`connect_member`,g.`max_member`,g.`average_lv`,g.`exp`,g.`next_exp`,g.`skill_point`,g.`mes1`,g.`mes2`,g.`emblem_len`,g.`emblem_id`,g.`emblem_data` "
-		"FROM `%s` g LEFT JOIN `%s` c ON c.`char_id` = g.`char_id` WHERE g.`guild_id`='%d'", guild_db, char_db, guild_id) )
+		"FROM `%s` g LEFT JOIN `%s` c ON c.`char_id` = g.`char_id` WHERE g.`guild_id`='%d'", schema_config.guild_db, schema_config.char_db, guild_id) )
 	{
 		Sql_ShowDebug(sql_handle);
 		return NULL;
@@ -409,7 +410,7 @@ struct guild * inter_guild_fromsql(int guild_id)
 
 	// load guild member info
 	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `account_id`,`char_id`,`hair`,`hair_color`,`gender`,`class`,`lv`,`exp`,`exp_payper`,`online`,`position`,`name` "
-		"FROM `%s` WHERE `guild_id`='%d' ORDER BY `position`", guild_member_db, guild_id) )
+		"FROM `%s` WHERE `guild_id`='%d' ORDER BY `position`", schema_config.guild_member_db, guild_id) )
 	{
 		Sql_ShowDebug(sql_handle);
 		aFree(g);
@@ -437,7 +438,7 @@ struct guild * inter_guild_fromsql(int guild_id)
 	}
 
 	//printf("- Read guild_position %d from sql \n",guild_id);
-	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `position`,`name`,`mode`,`exp_mode` FROM `%s` WHERE `guild_id`='%d'", guild_position_db, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `position`,`name`,`mode`,`exp_mode` FROM `%s` WHERE `guild_id`='%d'", schema_config.guild_position_db, guild_id) )
 	{
 		Sql_ShowDebug(sql_handle);
 		aFree(g);
@@ -459,7 +460,7 @@ struct guild * inter_guild_fromsql(int guild_id)
 	}
 
 	//printf("- Read guild_alliance %d from sql \n",guild_id);
-	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `opposition`,`alliance_id`,`name` FROM `%s` WHERE `guild_id`='%d'", guild_alliance_db, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `opposition`,`alliance_id`,`name` FROM `%s` WHERE `guild_id`='%d'", schema_config.guild_alliance_db, guild_id) )
 	{
 		Sql_ShowDebug(sql_handle);
 		aFree(g);
@@ -475,7 +476,7 @@ struct guild * inter_guild_fromsql(int guild_id)
 	}
 
 	//printf("- Read guild_expulsion %d from sql \n",guild_id);
-	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `account_id`,`name`,`mes` FROM `%s` WHERE `guild_id`='%d'", guild_expulsion_db, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `account_id`,`name`,`mes` FROM `%s` WHERE `guild_id`='%d'", schema_config.guild_expulsion_db, guild_id) )
 	{
 		Sql_ShowDebug(sql_handle);
 		aFree(g);
@@ -491,7 +492,7 @@ struct guild * inter_guild_fromsql(int guild_id)
 	}
 
 	//printf("- Read guild_skill %d from sql \n",guild_id);
-	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `id`,`lv` FROM `%s` WHERE `guild_id`='%d' ORDER BY `id`", guild_skill_db, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT `id`,`lv` FROM `%s` WHERE `guild_id`='%d' ORDER BY `id`", schema_config.guild_skill_db, guild_id) )
 	{
 		Sql_ShowDebug(sql_handle);
 		aFree(g);
@@ -516,7 +517,7 @@ struct guild * inter_guild_fromsql(int guild_id)
 	idb_put(guild_db_, guild_id, g); //Add to cache
 	g->save_flag |= GS_REMOVE; //But set it to be removed, in case it is not needed for long.
 
-	if (save_log)
+	if (charserv_config.save_log)
 		ShowInfo("Guild loaded (%d - %s)\n", guild_id, g->name);
 
 	return g;
@@ -530,15 +531,15 @@ int inter_guildcastle_tosql(struct guild_castle *gc)
 
 	StringBuf_Init(&buf);
 	StringBuf_Printf(&buf, "REPLACE INTO `%s` SET `castle_id`='%d', `guild_id`='%d', `economy`='%d', `defense`='%d', "
-	                 "`triggerE`='%d', `triggerD`='%d', `nextTime`='%d', `payTime`='%d', `createTime`='%d', `visibleC`='%d'",
-	                 guild_castle_db, gc->castle_id, gc->guild_id, gc->economy, gc->defense,
-	                 gc->triggerE, gc->triggerD, gc->nextTime, gc->payTime, gc->createTime, gc->visibleC);
+	    "`triggerE`='%d', `triggerD`='%d', `nextTime`='%d', `payTime`='%d', `createTime`='%d', `visibleC`='%d'",
+	    schema_config.guild_castle_db, gc->castle_id, gc->guild_id, gc->economy, gc->defense,
+	    gc->triggerE, gc->triggerD, gc->nextTime, gc->payTime, gc->createTime, gc->visibleC);
 	for (i = 0; i < MAX_GUARDIANS; ++i)
 		StringBuf_Printf(&buf, ", `visibleG%d`='%d'", i, gc->guardian[i].visible);
 
 	if (SQL_ERROR == Sql_Query(sql_handle, StringBuf_Value(&buf)))
 		Sql_ShowDebug(sql_handle);
-	else if(save_log)
+	else if(charserv_config.save_log)
 		ShowInfo("Saved guild castle (%d)\n", gc->castle_id);
 
 	StringBuf_Destroy(&buf);
@@ -561,7 +562,7 @@ static struct guild_castle* inter_guildcastle_fromsql(int castle_id)
 	                    "`triggerD`, `nextTime`, `payTime`, `createTime`, `visibleC`");
 	for (i = 0; i < MAX_GUARDIANS; ++i)
 		StringBuf_Printf(&buf, ", `visibleG%d`", i);
-	StringBuf_Printf(&buf, " FROM `%s` WHERE `castle_id`='%d'", guild_castle_db, castle_id);
+	StringBuf_Printf(&buf, " FROM `%s` WHERE `castle_id`='%d'", schema_config.guild_castle_db, castle_id);
 	if (SQL_ERROR == Sql_Query(sql_handle, StringBuf_Value(&buf))) {
 		Sql_ShowDebug(sql_handle);
 		StringBuf_Destroy(&buf);
@@ -590,7 +591,7 @@ static struct guild_castle* inter_guildcastle_fromsql(int castle_id)
 
 	idb_put(castle_db, castle_id, gc);
 
-	if (save_log)
+	if (charserv_config.save_log)
 		ShowInfo("Loaded guild castle (%d - guild %d)\n", castle_id, gc->guild_id);
 
 	return gc;
@@ -619,7 +620,7 @@ int inter_guild_CharOnline(int char_id, int guild_id)
 
 	if (guild_id == -1) {
 		//Get guild_id from the database
-		if( SQL_ERROR == Sql_Query(sql_handle, "SELECT guild_id FROM `%s` WHERE char_id='%d'", char_db, char_id) )
+		if( SQL_ERROR == Sql_Query(sql_handle, "SELECT guild_id FROM `%s` WHERE char_id='%d'", schema_config.char_db, char_id) )
 		{
 			Sql_ShowDebug(sql_handle);
 			return 0;
@@ -670,7 +671,7 @@ int inter_guild_CharOffline(int char_id, int guild_id)
 	if (guild_id == -1)
 	{
 		//Get guild_id from the database
-		if( SQL_ERROR == Sql_Query(sql_handle, "SELECT guild_id FROM `%s` WHERE char_id='%d'", char_db, char_id) )
+		if( SQL_ERROR == Sql_Query(sql_handle, "SELECT guild_id FROM `%s` WHERE char_id='%d'", schema_config.char_db, char_id) )
 		{
 			Sql_ShowDebug(sql_handle);
 			return 0;
@@ -760,7 +761,7 @@ int search_guildname(char *str)
 
 	Sql_EscapeStringLen(sql_handle, esc_name, str, safestrnlen(str, NAME_LENGTH));
 	//Lookup guilds with the same name
-	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT guild_id FROM `%s` WHERE name='%s'", guild_db, esc_name) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT guild_id FROM `%s` WHERE name='%s'", schema_config.guild_db, esc_name) )
 	{
 		Sql_ShowDebug(sql_handle);
 		return -1;
@@ -1142,15 +1143,15 @@ int mapif_parse_CreateGuild(int fd,int account_id,char *name,struct guild_member
 		return 0;
 	}
 	// Check Authorised letters/symbols in the name of the character
-	if (char_name_option == 1) { // only letters/symbols in char_name_letters are authorised
+	if (charserv_config.char_name_option == 1) { // only letters/symbols in char_name_letters are authorised
 		for (i = 0; i < NAME_LENGTH && name[i]; i++)
-			if (strchr(char_name_letters, name[i]) == NULL) {
+			if (strchr(charserv_config.char_name_letters, name[i]) == NULL) {
 				mapif_guild_created(fd,account_id,NULL);
 				return 0;
 			}
-	} else if (char_name_option == 2) { // letters/symbols in char_name_letters are forbidden
+	} else if (charserv_config.char_name_option == 2) { // letters/symbols in char_name_letters are forbidden
 		for (i = 0; i < NAME_LENGTH && name[i]; i++)
-			if (strchr(char_name_letters, name[i]) != NULL) {
+			if (strchr(charserv_config.char_name_letters, name[i]) != NULL) {
 				mapif_guild_created(fd,account_id,NULL);
 				return 0;
 			}
@@ -1200,7 +1201,7 @@ int mapif_parse_CreateGuild(int fd,int account_id,char *name,struct guild_member
 	mapif_guild_created(fd,account_id,g);
 	mapif_guild_info(fd,g);
 
-	if(log_inter)
+	if(charserv_config.log_inter)
 		inter_log("guild %s (id=%d) created by master %s (id=%d)\n",
 			name, g->guild_id, master->name, master->account_id );
 
@@ -1266,7 +1267,7 @@ int mapif_parse_GuildLeave(int fd, int guild_id, int account_id, int char_id, in
 	if( g == NULL )
 	{
 		// Unknown guild, just update the player
-		if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `guild_id`='0' WHERE `account_id`='%d' AND `char_id`='%d'", char_db, account_id, char_id) )
+		if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `guild_id`='0' WHERE `account_id`='%d' AND `char_id`='%d'", schema_config.char_db, account_id, char_id) )
 			Sql_ShowDebug(sql_handle);
 		// mapif_guild_withdraw(guild_id,account_id,char_id,flag,g->member[i].name,mes);
 		return 0;
@@ -1379,37 +1380,37 @@ int mapif_parse_BreakGuild(int fd,int guild_id)
 
 	// Delete guild from sql
 	//printf("- Delete guild %d from guild\n",guild_id);
-	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", guild_db, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", schema_config.guild_db, guild_id) )
 		Sql_ShowDebug(sql_handle);
 
-	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", guild_member_db, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", schema_config.guild_member_db, guild_id) )
 		Sql_ShowDebug(sql_handle);
 
-	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", guild_castle_db, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", schema_config.guild_castle_db, guild_id) )
 		Sql_ShowDebug(sql_handle);
 
-	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", guild_storage_db, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", schema_config.guild_storage_db, guild_id) )
 		Sql_ShowDebug(sql_handle);
 
-	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d' OR `alliance_id` = '%d'", guild_alliance_db, guild_id, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d' OR `alliance_id` = '%d'", schema_config.guild_alliance_db, guild_id, guild_id) )
 		Sql_ShowDebug(sql_handle);
 
-	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", guild_position_db, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", schema_config.guild_position_db, guild_id) )
 		Sql_ShowDebug(sql_handle);
 
-	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", guild_skill_db, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", schema_config.guild_skill_db, guild_id) )
 		Sql_ShowDebug(sql_handle);
 
-	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", guild_expulsion_db, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '%d'", schema_config.guild_expulsion_db, guild_id) )
 		Sql_ShowDebug(sql_handle);
 
 	//printf("- Update guild %d of char\n",guild_id);
-	if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `guild_id`='0' WHERE `guild_id`='%d'", char_db, guild_id) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `guild_id`='0' WHERE `guild_id`='%d'", schema_config.char_db, guild_id) )
 		Sql_ShowDebug(sql_handle);
 
 	mapif_guild_broken(guild_id,0);
 
-	if(log_inter)
+	if(charserv_config.log_inter)
 		inter_log("guild %s (id=%d) broken\n",g->name,guild_id);
 
 	//Remove the guild from memory. [Skotlex]
@@ -1497,8 +1498,8 @@ int mapif_parse_GuildMemberInfoChange(int fd,int guild_id,int account_id,int cha
 				exp = g->member[i].exp - old_exp;
 
 				// Compute gained exp
-				if (guild_exp_rate != 100)
-					exp = exp*guild_exp_rate/100;
+				if (charserv_config.guild_exp_rate != 100)
+					exp = exp*(charserv_config.guild_exp_rate)/100;
 
 				// Update guild exp
 				if (exp > UINT64_MAX - g->exp)
@@ -1759,7 +1760,7 @@ int mapif_parse_GuildCastleDataSave(int fd, int castle_id, int index, int value)
 
 	switch (index) {
 		case 1:
-			if (log_inter && gc->guild_id != value) {
+			if (charserv_config.log_inter && gc->guild_id != value) {
 				int gid = (value) ? value : gc->guild_id;
 				struct guild *g = idb_get(guild_db_, gid);
 				inter_log("guild %s (id=%d) %s castle id=%d\n",

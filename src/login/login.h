@@ -6,6 +6,7 @@
 
 #include "../common/mmo.h" // NAME_LENGTH,SEX_*
 #include "../common/core.h" // CORE_ST_LAST
+#include "account.h"
 
 enum E_LOGINSERVER_ST
 {
@@ -40,8 +41,8 @@ struct login_session_data {
 	int fd;
 };
 
+#define MAX_SERVERS 30
 struct mmo_char_server {
-
 	char name[20];
 	int fd;
 	uint32 ip;
@@ -49,7 +50,7 @@ struct mmo_char_server {
 	uint16 users;       // user count on this server
 	uint16 type;        // 0=normal, 1=maintenance, 2=over 18, 3=paying, 4=P2P
 	uint16 new_;        // should display as 'new'?
-};
+} server[MAX_SERVERS]; // char server data
 
 struct client_hash_node {
 	int group_id;
@@ -83,10 +84,15 @@ struct Login_Config {
 	char dnsbl_servs[1024];                         // comma-separated list of dnsbl servers
 
 	char account_engine[256];                       // name of the engine to use (defaults to auto, for the first available engine)
+	int allowed_regs;				//max number of registration
+	int time_allowed;				//registration intervall in seconds
 
 	int client_hash_check;							// flags for checking client md5
 	struct client_hash_node *client_hash_nodes;		// linked list containg md5 hash for each gm group
-};
+	char *loginconf_name;
+	char *msgconf_name;
+	char *lanconf_name;
+} login_config;
 
 #define sex_num2str(num) ( (num ==  SEX_FEMALE  ) ? 'F' : (num ==  SEX_MALE  ) ? 'M' : 'S' )
 #define sex_str2num(str) ( (str == 'F' ) ?  SEX_FEMALE  : (str == 'M' ) ?  SEX_MALE  :  SEX_SERVER  )
@@ -94,15 +100,51 @@ struct Login_Config {
 #define msg_config_read(cfgName) login_msg_config_read(cfgName)
 #define msg_txt(msg_number) login_msg_txt(msg_number)
 #define do_final_msg() login_do_final_msg()
-
 int login_msg_config_read(char *cfgName);
 const char* login_msg_txt(int msg_number);
 void login_do_final_msg(void);
 
+//-----------------------------------------------------
+// Online User Database [Wizputer]
+//-----------------------------------------------------
+struct online_login_data {
+	int account_id;
+	int waiting_disconnect;
+	int char_server;
+};
+DBMap* online_db; // int account_id -> struct online_login_data*
 
-#define MAX_SERVERS 30
-extern struct mmo_char_server server[MAX_SERVERS];
-extern struct Login_Config login_config;
+//-----------------------------------------------------
+// Auth database
+//-----------------------------------------------------
+#define AUTH_TIMEOUT 30000
+struct auth_node {
+	int account_id;
+	uint32 login_id1;
+	uint32 login_id2;
+	uint32 ip;
+	char sex;
+	uint32 version;
+	uint8 clienttype;
+};
+DBMap* auth_db; // int account_id -> struct auth_node*
 
+
+AccountDB* login_get_accounts_db(void);
+
+
+bool check_encrypted(const char* str1, const char* str2, const char* passwd);
+bool check_password(const char* md5key, int passwdenc, const char* passwd, const char* refpass);
+
+int waiting_disconnect_timer(int tid, unsigned int tick, int id, intptr_t data);
+void remove_online_user(int account_id);
+struct online_login_data* add_online_user(int char_server, int account_id);
+int lan_subnetcheck(uint32 ip);
+
+int online_db_setoffline(DBKey key, DBData *data, va_list ap);
+DBData create_online_user(DBKey key, va_list args);
+
+int mmo_auth_new(const char* userid, const char* pass, const char sex, const char* last_ip);
+int mmo_auth(struct login_session_data* sd, bool isServer);
 
 #endif /* _LOGIN_H_ */
