@@ -977,8 +977,10 @@ void initChangeTables(void) {
 	StatusChangeFlagTable[SC_EXTRACT_WHITE_POTION_Z] |= SCB_REGEN;
 	StatusChangeFlagTable[SC_VITATA_500] |= SCB_REGEN;
 	StatusChangeFlagTable[SC_EXTRACT_SALAMINE_JUICE] |= SCB_ASPD;
+	StatusChangeFlagTable[SC_DEFSET] |= SCB_DEF;
+	StatusChangeFlagTable[SC_MDEFSET] |= SCB_MDEF;
 
-#ifdef RENEWAL_EDP
+#ifdef RENEWAL
 	// renewal EDP increases your weapon atk
 	StatusChangeFlagTable[SC_EDP] |= SCB_WATK;
 #endif
@@ -1117,10 +1119,10 @@ int status_set_sp(struct block_list *bl, unsigned int sp, int flag)
 	return status_zap(bl, 0, status->sp - sp);
 }
 
-int status_charge(struct block_list* bl, int hp, int sp)
+int64 status_charge(struct block_list* bl, int64 hp, int64 sp)
 {
 	if(!(bl->type&BL_CONSUME))
-		return hp+sp; //Assume all was charged so there are no 'not enough' fails.
+		return (int)hp+sp; //Assume all was charged so there are no 'not enough' fails.
 	return status_damage(NULL, bl, hp, sp, 0, 3);
 }
 
@@ -1129,10 +1131,12 @@ int status_charge(struct block_list* bl, int hp, int sp)
 //If flag&2, fail if target does not has enough to substract.
 //If flag&4, if killed, mob must not give exp/loot.
 //flag will be set to &8 when damaging sp of a dead character
-int status_damage(struct block_list *src,struct block_list *target,int hp, int sp, int walkdelay, int flag)
+int status_damage(struct block_list *src,struct block_list *target,int64 dhp, int64 dsp, int walkdelay, int flag)
 {
 	struct status_data *status;
 	struct status_change *sc;
+	int hp = (int)cap_value(dhp,INT_MIN,INT_MAX);
+	int sp = (int)cap_value(dsp,INT_MIN,INT_MAX);
 
 	if(sp && !(target->type&BL_CONSUME))
 		sp = 0; //Not a valid SP target.
@@ -1148,7 +1152,7 @@ int status_damage(struct block_list *src,struct block_list *target,int hp, int s
 	}
 
 	if (target->type == BL_SKILL)
-		return skill_unit_ondamaged((struct skill_unit *)target, src, hp, gettick());
+		return (int)skill_unit_ondamaged((struct skill_unit *)target, src, hp, gettick());
 
 	status = status_get_status_data(target);
 	if( status == &dummy_status )
@@ -1250,7 +1254,7 @@ int status_damage(struct block_list *src,struct block_list *target,int hp, int s
 	if( status->hp || (flag&8) ) { //Still lives or has been dead before this damage.
 		if (walkdelay)
 			unit_set_walkdelay(target, gettick(), walkdelay, 0);
-		return hp+sp;
+		return (int)(hp+sp);
 	}
 
 	status->hp = 0;
@@ -1271,7 +1275,7 @@ int status_damage(struct block_list *src,struct block_list *target,int hp, int s
 	}
 
 	if(!flag) //Death cancelled.
-		return hp+sp;
+		return (int)(hp+sp);
 
 	//Normal death
 	if (battle_config.clear_unit_ondeath &&
@@ -1303,7 +1307,7 @@ int status_damage(struct block_list *src,struct block_list *target,int hp, int s
 		if( target->type == BL_MOB )
 			((TBL_MOB*)target)->state.rebirth = 1;
 
-		return hp+sp;
+		return (int)(hp+sp);
 	}
 	if(target->type == BL_PC) {
 		TBL_PC *sd = BL_CAST(BL_PC,target);
@@ -1313,7 +1317,7 @@ int status_damage(struct block_list *src,struct block_list *target,int hp, int s
 			clif_skillcasting(&hd->bl, hd->bl.id, target->id, 0,0, MH_LIGHT_OF_REGENE, skill_get_ele(MH_LIGHT_OF_REGENE, 1), 10); //just to display usage
 			clif_skill_nodamage(&sd->bl, target, ALL_RESURRECTION, 1, status_revive(&sd->bl,hd->sc.data[SC_LIGHT_OF_REGENE]->val2,0));
 			status_change_end(&sd->hd->bl,SC_LIGHT_OF_REGENE,INVALID_TIMER);
-			return hp + sp;
+			return (int)(hp+sp);
 		}
 	}
 	if (target->type == BL_MOB && sc && sc->data[SC_REBIRTH] && !((TBL_MOB*) target)->state.rebirth) { // Ensure the monster has not already rebirthed before doing so.
@@ -1321,7 +1325,7 @@ int status_damage(struct block_list *src,struct block_list *target,int hp, int s
 		status_change_clear(target,0);
 		((TBL_MOB*)target)->state.rebirth = 1;
 
-		return hp+sp;
+		return (int)(hp+sp);
 	}
 
 	status_change_clear(target,0);
@@ -1351,15 +1355,17 @@ int status_damage(struct block_list *src,struct block_list *target,int hp, int s
 		npc_script_event(sd,NPCE_DIE);
 	}
 
-	return hp+sp;
+	return (int)(hp+sp);
 }
 
 //Heals a character. If flag&1, this is forced healing (otherwise stuff like Berserk can block it)
 //If flag&2, when the player is healed, show the HP/SP heal effect.
-int status_heal(struct block_list *bl,int hp,int sp, int flag)
+int status_heal(struct block_list *bl,int64 hhp,int64 hsp, int flag)
 {
 	struct status_data *status;
 	struct status_change *sc;
+	int hp = (int)cap_value(hhp,INT_MIN,INT_MAX);
+	int sp = (int)cap_value(hsp,INT_MIN,INT_MAX);
 
 	status = status_get_status_data(bl);
 
@@ -1414,14 +1420,14 @@ int status_heal(struct block_list *bl,int hp,int sp, int flag)
 
 	// send hp update to client
 	switch(bl->type) {
-	case BL_PC:  pc_heal((TBL_PC*)bl,hp,sp,flag&2?1:0); break;
-	case BL_MOB: mob_heal((TBL_MOB*)bl,hp); break;
-	case BL_HOM: merc_hom_heal((TBL_HOM*)bl); break;
-	case BL_MER: mercenary_heal((TBL_MER*)bl,hp,sp); break;
-	case BL_ELEM: elemental_heal((TBL_ELEM*)bl,hp,sp); break;
+		case BL_PC:  pc_heal((TBL_PC*)bl,hp,sp,flag&2?1:0); break;
+		case BL_MOB: mob_heal((TBL_MOB*)bl,hp); break;
+		case BL_HOM: merc_hom_heal((TBL_HOM*)bl); break;
+		case BL_MER: mercenary_heal((TBL_MER*)bl,hp,sp); break;
+		case BL_ELEM: elemental_heal((TBL_ELEM*)bl,hp,sp); break;
 	}
 
-	return hp+sp;
+	return (int)hp+sp;
 }
 
 //Does percentual non-flinching damage/heal. If mob is killed this way,
@@ -2455,18 +2461,8 @@ int status_calc_pc_(struct map_session_data* sd, bool first)
 		if(!sd->inventory_data[index])
 			continue;
 
-		if(sd->inventory_data[index]->flag.no_equip) { // Items may be equipped, their effects however are nullified.
-			if(map[sd->bl.m].flag.restricted && sd->inventory_data[index]->flag.no_equip&(8*map[sd->bl.m].zone))
-				continue;
-			if(!map_flag_vs(sd->bl.m) && sd->inventory_data[index]->flag.no_equip&1)
-				continue;
-			if(map[sd->bl.m].flag.pvp && sd->inventory_data[index]->flag.no_equip&2)
-				continue;
-			if(map_flag_gvg(sd->bl.m) && sd->inventory_data[index]->flag.no_equip&4)
-				continue;
-			if(map[sd->bl.m].flag.battleground && sd->inventory_data[index]->flag.no_equip&8)
-				continue;
-		}
+		if(!pc_has_permission(sd, PC_PERM_USE_ALL_EQUIPMENT) && sd->inventory_data[index]->flag.no_equip && itemdb_isNoEquip(sd->inventory_data[index], sd->bl.m)) // Items may be equipped, their effects however are nullified.
+			continue;
 
 		status->def += sd->inventory_data[index]->def;
 
@@ -2609,18 +2605,8 @@ int status_calc_pc_(struct map_session_data* sd, bool first)
 				}
 				if(!data->script)
 					continue;
-				if(data->flag.no_equip) { //Card restriction checks.
-					if(map[sd->bl.m].flag.restricted && data->flag.no_equip&(8*map[sd->bl.m].zone))
-						continue;
-					if(!map_flag_vs(sd->bl.m) && data->flag.no_equip&1)
-						continue;
-					if(map[sd->bl.m].flag.pvp && data->flag.no_equip&2)
-						continue;
-					if(map_flag_gvg(sd->bl.m) && data->flag.no_equip&4)
-						continue;
-					if(map[sd->bl.m].flag.battleground && data->flag.no_equip&8)
-						continue;
-				}
+				if(!pc_has_permission(sd, PC_PERM_USE_ALL_EQUIPMENT) && data->flag.no_equip && itemdb_isNoEquip(data, sd->bl.m)) //Card restriction checks.
+					continue;
 				if(i == EQI_HAND_L && sd->status.inventory[index].equip == EQP_HAND_L)
 				{	//Left hand status.
 					sd->state.lr_flag = 1;
@@ -4951,7 +4937,9 @@ static defType status_calc_def(struct block_list *bl, struct status_change *sc, 
 
 	if(!sc || !sc->count)
 		return (defType)cap_value(def,DEFTYPE_MIN,DEFTYPE_MAX);
-
+	
+	if(sc->data[SC_DEFSET]) //FIXME: Find out if this really overrides all other SCs
+		return sc->data[SC_DEFSET]->val1;
 	if(sc->data[SC_BERSERK])
 		return 0;
 	if(sc->data[SC_SKA])
@@ -5091,7 +5079,9 @@ static defType status_calc_mdef(struct block_list *bl, struct status_change *sc,
 
 	if(!sc || !sc->count)
 		return (defType)cap_value(mdef,DEFTYPE_MIN,DEFTYPE_MAX);
-
+	
+	if(sc->data[SC_MDEFSET]) //FIXME: Find out if this really overrides all other SCs
+		return sc->data[SC_MDEFSET]->val1;
 	if(sc->data[SC_BERSERK])
 		return 0;
 	if(sc->data[SC_BARRIER])
@@ -7393,7 +7383,7 @@ int status_change_start(struct block_list* src, struct block_list* bl,enum sc_ty
 			break;
 		case SC_EDP:	// [Celest]
 			val2 = val1 + 2; //Chance to Poison enemies.
-#ifndef RENEWAL_EDP
+#ifndef RENEWAL
 			val3 = 50*(val1+1); //Damage increase (+50 +50*lv%)
 #endif
 			if( sd )//[Ind] - iROwiki says each level increases its duration by 3 seconds

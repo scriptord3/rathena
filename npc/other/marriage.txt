@@ -3,14 +3,14 @@
 //===== By: ================================================== 
 //= L0ne_W0lf
 //===== Current Version: ===================================== 
-//= 1.3
+//= 1.4
 //===== Compatible With: ===================================== 
 //= rAthena SVN
 //===== Description: ========================================= 
 //= [Official Conversion]
 //= Official Marriage script.
 //= Added isloggedin() check, even though Aegis doesn't do it.
-//= Currently does not support same-sex marriages.
+//= Currently does not support same-Sex marriages.
 //= Old script located in: npc/custom/marriage.txt
 //= - Variable in use: wedding_sign (max 1)
 //= - Variable in use: $@wedding (max 1) 
@@ -21,6 +21,7 @@
 //= 1.2 Corrected duration of Wedding status. [L0ne_W0lf]
 //= 1.3 Changed permanent global variables to temporary ones. [Euphy]
 //=     Added GM NPCs (commented).
+//= 1.4 Added GM management function. [Euphy]
 //============================================================
 
 prt_church,97,100,4	script	Wedding Staff#w	71,{
@@ -183,7 +184,7 @@ prt_church,97,100,4	script	Wedding Staff#w	71,{
 
 	case 3:
 		cutin "wedding_marry02",2;
-		if (sex) {
+		if (Sex) {
 			mes "[Marry Happy]";
 			mes "So you'd like to get married?";
 			mes "As a groom, you need to prepare";
@@ -258,8 +259,8 @@ prt_church,97,100,4	script	Wedding Staff#w	71,{
 				mes "back after you find it, okay?";
 				goto L_End;
 			}
-			else if (sex) {
-				if (zeny < 1300000) {
+			else if (Sex) {
+				if (Zeny < 1300000) {
 					mes "[Marry Happy]";
 					mes "I'm sorry, but you don't";
 					mes "have the 1,300,000 zeny";
@@ -279,8 +280,8 @@ prt_church,97,100,4	script	Wedding Staff#w	71,{
 					goto L_End;
 				}
 			}
-			else if (sex == 0) {
-				if (zeny < 1200000) {
+			else if (Sex == 0) {
+				if (Zeny < 1200000) {
 					mes "[Marry Happy]";
 					mes "I'm sorry, but all brides";
 					mes "must pay the 1,200,000";
@@ -342,17 +343,17 @@ prt_church,97,100,4	script	Wedding Staff#w	71,{
 			mes "process, both of you should";
 			mes "speak to the Bishop to begin";
 			mes "the wedding ceremony.";
-			Emotion e_lv;
+			emotion e_lv;
 			next;
 			mes "[Marry Happy]";
-			if (sex) {
+			if (Sex) {
 				mes "Since you're the groom,";
 				mes "you need to speak to the";
 				mes "Bishop first. When you're";
 				mes "finished, it will be your";
 				mes "bride's turn to speak to";
 				mes "Bishop Vomars.";
-				set zeny,zeny-1300000;
+				set Zeny, Zeny-1300000;
 				delitem 7170,1; //Tuxedo
 			}
 			else {
@@ -362,7 +363,7 @@ prt_church,97,100,4	script	Wedding Staff#w	71,{
 				mes "Vomars first. When he's";
 				mes "finished, it'll be your turn";
 				mes "to speak to Bishop Vomars.";
-				set zeny,zeny-1200000;
+				set Zeny, Zeny-1200000;
 				delitem 2338,1; //Wedding_Dress
 			}
 			delitem 2613,1; //Diamond_Ring
@@ -386,7 +387,7 @@ prt_church,97,100,4	script	Wedding Staff#w	71,{
 		donpcevent "Single Army#Payon::OnEnable";
 		donpcevent "Single Army#Amatsu::OnEnable";
 		donpcevent "Single Army#Gonryun::OnEnable";
-		Emotion e_omg;
+		emotion e_omg;
 		mes "[Single Army]";
 		mes "^CC9933You have to refine";
 		mes "items on your own to";
@@ -426,7 +427,7 @@ prt_church,97,100,4	script	Wedding Staff#w	71,{
 		emotion e_rock,0,"Single Army#Gonryun";
 		close2;
 		cutin "wedding_marry01",255;
-		Emotion e_swt;
+		emotion e_swt;
 		donpcevent "Single Army#Prontera::OnInit";
 		donpcevent "Single Army#Geffen::OnInit";
 		donpcevent "Single Army#Morocc::OnInit";
@@ -568,7 +569,7 @@ prt_church,100,128,4	script	Bishop#w	60,{
 				getpartymember(getcharid(1));
 				set .@partymembercount,$@partymembercount;
 				if (.@partymembercount == 2) {
-					if (sex) {
+					if (Sex) {
 						set $@wedding,1;
 						initnpctimer;
 						mes "[Vomars]";
@@ -639,7 +640,7 @@ prt_church,100,128,4	script	Bishop#w	60,{
 				getpartymember(getcharid(1));
 				set .@partymembercount,$@partymembercount;
 				if (.@partymembercount == 2) {
-					if (sex == 0) {
+					if (Sex == 0) {
 						if (strcharinfo(0) == $@wed_bride$) {
 							mes "[Vomars]";
 							mes "Young lovers, please";
@@ -810,16 +811,15 @@ OnTimer180000:
 	end;
 }
 
-/*
 prt_church,28,178,4	script	The King of Midgart	108,{
+	callfunc "F_GM_NPC";
 	mes "[Vomars]";
 	mes "Wh-who are you?";
 	mes "You must know the";
 	mes "password to invoke";
 	mes "my awesome powers.";
 	next;
-	input .@input;
-	if (.@input != 1854) {
+	if (callfunc("F_GM_NPC",1854,0) < 1) {
 		mes "[Vomars]";
 		mes "This is";
 		mes "no place for";
@@ -857,13 +857,13 @@ prt_church,28,178,4	script	The King of Midgart	108,{
 }
 
 prt_church,20,179,4	script	Divorce Staff	71,{
+	callfunc "F_GM_NPC";
 	mes "[Bad Ending]";
 	mes "Uh oh...";
 	mes "You know I can't";
 	mes "do anything for you.";
 	next;
-	input .@input;
-	if (.@input != 1854) {
+	if (callfunc("F_GM_NPC",1854,0) < 1) {
 		mes "[Bad Ending]";
 		mes "Hmm...";
 		mes "You really";
@@ -904,13 +904,13 @@ prt_church,20,179,4	script	Divorce Staff	71,{
 }
 
 prt_church,22,179,4	script	Remarry Staff	71,{
+	callfunc "F_GM_NPC";
 	mes "[Wedding Again]";
 	mes "Hmm...?";
 	mes "What exactly are";
 	mes "you doing here?";
 	next;
-	input .@input;
-	if (.@input != 1854) {
+	if (callfunc("F_GM_NPC",1854,0) < 1) {
 		mes "[Wedding Again]";
 		mes "Ahk!";
 		mes "An adventurer";
@@ -960,4 +960,3 @@ prt_church,22,179,4	script	Remarry Staff	71,{
 		close;
 	}
 }
-*/

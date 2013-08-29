@@ -17,13 +17,13 @@ COMMON_H = ../common/sql.h
 
 CHAR_OBJ = char.o char_clif.o char_logif.o char_mapif.o char_cnslif.o\
 	inter.o int_party.o int_guild.o int_storage.o int_pet.o int_homun.o int_mail.o int_auction.o int_quest.o int_mercenary.o int_elemental.o
-CHAR_H = char.h \
-	inter.h int_party.h int_guild.h int_storage.h int_pet.h int_homun.h int_mail.h int_auction.h int_quest.h int_mercenary.h int_elemental.h
 CHAR_SQL_OBJ = $(CHAR_OBJ:%=obj_sql/%)
+CHAR_H = $(shell ls ../char/*.h)
 
 HAVE_MYSQL=@HAVE_MYSQL@
-ifeq ($(HAVE_MYSQL),yes)
-	SQL_DEPENDS=char-server_sql
+ifeq ($(HAVE_MYSQL),yes)	
+	SQL_DEPENDS=char-server
+
 else
 	SQL_DEPENDS=needs_mysql
 endif
@@ -40,20 +40,21 @@ sql: $(SQL_DEPENDS)
 
 clean:
 	@echo "	CLEAN	char"
-	@rm -rf *.o obj_sql ../../char-server_sql@EXEEXT@
+	@rm -rf *.o obj_sql ../../@OCHR@@EXEEXT@
 
 help:
 	@echo "possible targets are 'sql' 'all' 'clean' 'help'"
-	@echo "'sql'  		  - char server (SQL version)"
-	@echo "'all'              - builds all above targets"
-	@echo "'clean'            - cleans builds and objects"
-	@echo "'help'             - outputs this message"
+	@echo "'sql'       - char server"
+	@echo "'all'       - builds all above targets"
+	@echo "'clean'     - cleans builds and objects"
+	@echo "'help'      - outputs this message"
 
 #####################################################################
 
-char-server_sql: obj_sql $(CHAR_SQL_OBJ) ../common/obj_sql/common_sql.a ../common/obj_all/common.a $(MT19937AR_OBJ)
-	@echo "	LD	$@"
-	@@CC@ @LDFLAGS@ -o ../../char-server_sql@EXEEXT@ $(CHAR_SQL_OBJ) ../common/obj_sql/common_sql.a ../common/obj_all/common.a $(MT19937AR_OBJ) $(LIBCONFIG_OBJ) @LIBS@ @MYSQL_LIBS@
+
+char-server: obj_sql $(CHAR_SQL_OBJ) ../common/obj_sql/common_sql.a ../common/obj_all/common.a
+	@echo "	LD	@OCHR@@EXEEXT@"
+	@@CC@ @LDFLAGS@ -o ../../@OCHR@@EXEEXT@ $(CHAR_SQL_OBJ) ../common/obj_sql/common_sql.a ../common/obj_all/common.a $(MT19937AR_OBJ) $(LIBCONFIG_OBJ) @LIBS@ @MYSQL_LIBS@
 
 needs_mysql:
 	@echo "MySQL not found or disabled by the configure script"

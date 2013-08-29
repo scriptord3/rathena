@@ -398,7 +398,9 @@ identical. Writing a number like '0x<hex digits>' will make it recognized as a
 hexadecimal value. Notice that 0x10 is equal to 16. Also notice that if you try 
 to 'mes 0x10' it will print '16'.
 
-This is not used much, but it pays to know about it.
+Number values can't exceed the limits of an integer variable: Any number
+greater than INT_MAX (2147483647) or smaller than INT_MIN (-2147483648) will
+be capped to those values and will cause a warning to be reported.
 
 Variables
 ---------
@@ -3460,8 +3462,7 @@ The renewal feature to check is determined by type.
  2 - RENEWAL_DROP (renewal drop rate algorithms)
  3 - RENEWAL_EXP (renewal exp rate algorithms)
  4 - RENEWAL_LVDMG (renewal level modifier on damage)
- 5 - RENEWAL_EDP (renewal enchant deadly poison algorithm)
- 6 - RENEWAL_ASPD (renewal ASPD)
+ 5 - RENEWAL_ASPD (renewal ASPD)
 
 ---------------------------------------
 
@@ -4604,6 +4605,8 @@ them.
 This command will destroy whatever is currently equipped in the invoking
 character's specified equipment slot. For a full list of possible equipment 
 slots see 'getequipid'.
+
+This command will return 1 if an item was deleted and 0 otherwise.
 
 ---------------------------------------
 
@@ -6511,8 +6514,8 @@ character belonged to an account which had GM level 99.
     input @player$;
     atcommand "@nuke "+@player$;
 
-This command has a lot of good uses, I am sure you can have some fun with this 
-one.
+Note that for atcommands bound using 'bindatcmd', this command will execute the
+original atcommand, not the script-bound atcommand.
 
 ---------------------------------------
 
@@ -6529,7 +6532,7 @@ The commands can also run without an attached rid.
 
 ---------------------------------------
 
-*bindatcmd "command","<NPC object name>::<event label>"{,<atcommand level>,<charcommand level>};
+*bindatcmd "<command>","<NPC object name>::<event label>"{,<atcommand level>,<charcommand level>};
 
 This command will bind a NPC event label to an atcommand. Upon execution of the
 atcommand, the user will invoke the NPC event label. Each atcommand is only allowed
@@ -6555,16 +6558,20 @@ OnAtcommand:
 
 ---------------------------------------
 
-*unbindatcmd "command";
+*unbindatcmd "<command>";
 
 This command will unbind a NPC event label from an atcommand.
 
 ---------------------------------------
 
-*useatcmd "command";
+*useatcmd "<command>";
 
-This command will execute an atcommand binding on the attached RID from a script. 
-The three .@atcmd_***** variables will NOT be set when invoking scripts-atcommands this way.
+This command will execute a script-bound atcommand for the attached RID. If the
+supplied command is not bound to any script, this command will act like 'atcommand'
+and attempt to execute a source-defined command.
+
+The three .@atcmd_***** variables will NOT be set when invoking script-bound atcommands
+in this way.
 
 ---------------------------------------
 \\
@@ -7215,7 +7222,7 @@ same as NPC sprite facing directions: 0=north, 1=northwest, 2=west, etc.
 
 *readbook <book id>,<page>;
 
-This will open a book item at the specified page
+This command will open a book item at the specified page.
 
 ---------------------------------------
 
@@ -7601,23 +7608,8 @@ currently has active. Valid types are:
  3 - Pet friendly level (intimacy score). 1000 is full loyalty.
  4 - Pet hungry level. 100 is completely full.
  5 - Pet rename flag. 0 means this pet has not been named yet.
+ 6 - Pet level
 
----------------------------------------
-
-*petstat(<flag>)
-
-Returns current pet status, all are integers except name.
-Returns 0 or "" if the player doesn't have pets.
-
-Flags usable:
-- PET_CLASS
-- PET_NAME
-- PET_LEVEL
-- PET_HUNGRY
-- PET_INTIMATE
-
-Example:
-	set @i, petstat(PET_CLASS);
 
 ---------------------------------------
 

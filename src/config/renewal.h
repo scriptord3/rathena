@@ -3,10 +3,14 @@
 #ifndef _CONFIG_RENEWAL_H_
 #define _CONFIG_RENEWAL_H_
 
+//quick option to disable all renewal option, used by ./configure
+//#define PRERE
+#ifndef PRERE
 /**
  * rAthena configuration file (http://rathena.org)
  * For detailed guidance on these check http://rathena.org/wiki/SRC/config/
  **/
+
 
 /**
  * @INFO: This file holds general-purpose renewal settings, for class-specific ones check /src/config/classes folder
@@ -49,15 +53,6 @@
 // leave this line to enable renewal base level modifier on skill damage (selected skills only)
 #define RENEWAL_LVDMG
 
-/// renewal enchant deadly poison algorithm
-///
-/// leave this line to enable the renewed EDP algorithm
-/// under renewal mode:
-///  - damage is NOT increased by 400%
-///  - it does NOT affect grimtooth
-///  - weapon and status ATK are increased
-#define RENEWAL_EDP
-
 /// renewal ASPD [malufett]
 /// (disable by commenting the line)
 ///
@@ -67,5 +62,7 @@
 /// - there is a change in how skills/items give ASPD
 /// - some skill/item ASPD bonuses won't stack
 #define RENEWAL_ASPD
+
+#endif
 
 #endif // _CONFIG_RENEWAL_H_

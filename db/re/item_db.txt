@@ -944,7 +944,7 @@
 1643,Dead_Tree_Cane,Dead Tree Cane,4,20,,100,100:155,,1,0,0x00818314,63,2,2,4,70,1,10,{ bonus bInt,4; if (getrefine()>5) { bonus bInt,getrefine()-5; bonus bMaxHP,-200; bonus bMaxSP,-100; } },{},{}
 1644,Piercing_Staff_M,Staff of Piercing,4,20,,500,80:145,,1,0,0x00018314,18,2,2,3,70,1,10,{ bonus bInt,4; bonus bMatkRate,15; bonus bIgnoreMdefRate,10+getrefine(); },{},{}
 1645,Lich_Bone_Wand_M,Lich's Bone Wand,4,20,,800,60:170,,1,2,0x00018314,18,2,2,3,70,1,10,{ bonus bInt,1; bonus bDex,1; bonus bAtkEle,Ele_Undead; bonus bMatkRate,20; bonus3 bAutoSpellWhenHit,"NPC_WIDECURSE",5,10+getrefine(); if(getrefine()>=9){ bonus bMatkRate,3; bonus bMaxSP,300; } },{},{}
-1646,La'cryma_Stick,La'cryma Stick,4,20,,500,30:180,,1,2,0x00010204,18,2,2,3,50,1,10,{ bonus bInt,4; bonus bMdef,1; bonus2 bSkillAtk,"WZ_STORMGUST",getrefine(); if (getrefine() > 9) bonus2 bVariableCastrate,"WZ_STORMGUST",-8; },{},{}
+1646,La'cryma_Stick,La'cryma Stick,4,20,,500,30:180,,1,2,0x00010204,18,2,2,3,50,1,10,{ bonus bInt,4; bonus bMdef,getrefine(); bonus2 bSkillAtk,"WZ_STORMGUST",getrefine(); if (getrefine() > 9) bonus2 bVariableCastrate,"WZ_STORMGUST",-8; },{},{}
 1647,Croce_Staff,Croce Staff,4,20,,500,30:175,,1,1,0x00008110,18,2,2,3,50,1,10,{ bonus bAtkEle,Ele_Holy; bonus bInt,4; bonus4 bAutoSpellOnSkill,"AL_HEAL","AL_BLESSING",getskilllv("AL_BLESSING")>1?getskilllv("AL_BLESSING"):1,20; },{},{}
 1648,Staff_Of_Bordeaux,Staff Of Bordeaux,4,20,,500,30:180,,1,0,0x00010200,18,2,2,4,50,1,10,{ bonus bInt,2; bonus bDex,1; if(getskilllv("SA_DRAGONOLOGY") == 5) { bonus bUseSPrate,-15; bonus bInt,3; } },{},{}
 1649,Rafini_Staff,Laphine Staff,4,20,,500,30:180,,1,0,0x00818315,63,2,2,3,100,1,10,{ bonus bFixedCastRate,-getrefine(); },{},{}
@@ -5260,8 +5260,8 @@
 11500,Light_Yellow_Pot,Light Yellow Potion,0,550,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ itemheal rand(175,235),0; },{},{}
 11501,Light_White_Pot,Light White Potion,0,1200,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ itemheal rand(325,405),0; },{},{}
 11502,Light_Blue_Pot,Light Blue Potion,0,5000,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ itemheal 0,rand(40,60); },{},{}
-11503,WoE_White_Potion,WoE White Potion,0,0,,100,,,,,0xFFFFFFFF,63,2,,,,,,{ itemheal rand(400,500),0; },{},{}
-11504,WoE_Blue_Potion,WoE Blue Potion,0,0,,100,,,,,0xFFFFFFFF,63,2,,,,,,{ itemheal 0,rand(50,70); },{},{}
+11503,Siege_White_Potion,WoE White Potion,0,0,,100,,,,,0xFFFFFFFF,63,2,,,,,,{ itemheal rand(400,500),0; },{},{}
+11504,Siege_Blue_Potion,WoE Blue Potion,0,0,,100,,,,,0xFFFFFFFF,63,2,,,,,,{ itemheal 0,rand(50,70); },{},{}
 11505,Iris,Iris,0,0,,30,,,,,0xFFFFFFFF,63,2,,,,,,{ itemheal 0,150; },{},{}
 11506,Fanta_Orange,Fanta Orange,0,800,,100,,,,,0xFFFFFFFF,63,2,,,,,,{ itemheal rand(50,70),rand(10,12); },{},{}
 11507,Fanta_Grape,Fanta Grape,0,800,,100,,,,,0xFFFFFFFF,63,2,,,,,,{ itemheal rand(50,70),rand(10,12); },{},{}
@@ -6243,9 +6243,9 @@
 12965,Emergency_Box1,Emergency Level 1 Scroll Box,18,20,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ getitem 12968,1; },{},{}
 12966,Emergency_Box2,Emergency Level 2 Scroll Box,18,20,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ getitem 12969,1; },{},{}
 12967,Emergency_Box3,Emergency Level 3 Scroll Box,18,20,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ getitem 12970,1; },{},{}
-12968,Emergency_Scroll1,Emergency Level 1 Scroll,11,2,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ unitskilluseid getcharid(3),"GD_ITEMEMERGENCYCALL",1; },{},{}
-12969,Emergency_Scroll2,Emergency Level 2 Scroll,11,2,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ unitskilluseid getcharid(3),"GD_ITEMEMERGENCYCALL",2; },{},{}
-12970,Emergency_Scroll3,Emergency Level 3 Scroll,11,2,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ unitskilluseid getcharid(3),"GD_ITEMEMERGENCYCALL",3; },{},{}
+12968,Emergency_Scroll1,Emergency Level 1 Scroll,11,2,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ itemskill "GD_ITEMEMERGENCYCALL",1; },{},{}
+12969,Emergency_Scroll2,Emergency Level 2 Scroll,11,2,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ itemskill "GD_ITEMEMERGENCYCALL",2; },{},{}
+12970,Emergency_Scroll3,Emergency Level 3 Scroll,11,2,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ itemskill "GD_ITEMEMERGENCYCALL",3; },{},{}
 12971,Teleport_Box1,Teleport Scroll Box 1,18,20,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ getitem 12977,10; },{},{}
 12972,Teleport_Box2,Teleport Scroll Box 2,18,20,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ getitem 12978,10; },{},{}
 12973,Teleport_Box3,Teleport Scroll Box 3,18,20,,10,,,,,0xFFFFFFFF,63,2,,,,,,{ getitem 12979,10; },{},{}
@@ -8105,8 +8105,8 @@
 18556,Angel_Helmet,Angel Helmet,5,0,,0,,0,,0,0xFFFFFFFF,63,2,512,,0,0,3,{},{},{}
 18557,Devil_Helmet,Devil Helmet,5,0,,0,,0,,0,0xFFFFFFFF,63,2,512,,0,0,12,{},{},{}
 18558,Sinsuncho_Hat,Sinsuncho Hat,5,20,,1000,,0,,0,0xFFFFFFFF,63,2,256,,10,0,730,{},{},{}
-18559,Fafnir_Skin,Fafnir Skin,5,20,,100,,3,,0,0xFFFFFFFF,63,2,512,,50,0,152,{},{},{}
-18560,Fafnir_Mask,Fafnir Mask,5,20,,300,,2,,0,0xFFFFFFFF,63,2,1,,50,0,180,{},{},{}
+18559,Fafnir_Skin,Fafnir Skin,5,20,,100,,3,,0,0xFFFFFFFF,63,2,512,,50,0,152,{ bonus bCritical,3; bonus bHPrecovRate,-100; },{},{}
+18560,Fafnir_Mask,Fafnir Mask,5,20,,300,,2,,0,0xFFFFFFFF,63,2,1,,50,0,180,{ bonus bCritical,2; },{},{}
 18561,B_Feather_Beret,B Feather Beret,5,20,,300,,5,,1,0xFFFFFFFF,63,2,256,,40,1,731,{ bonus bVit,2; bonus bMdef,3; bonus2 bSubRace,RC_DemiHuman,10; },{},{}
 18562,Bone_Hat,Bone Hat,5,20,,200,,3,,1,0xFFFFFFFF,63,2,256,,10,1,732,{ bonus bMdef,3; },{},{}
 18563,Heart_Wing_Hairband,Heart Wing Hairband,5,20,,300,,0,,1,0xFFFFFFFF,63,2,256,,50,1,733,{},{},{}
@@ -8300,6 +8300,7 @@
 18816,Adv_Angel_School_Cap,Evoked Angel School Cap,5,20,,100,,4,,1,0xFFFFFFFE,63,2,256,,0,1,929,{ bonus bInt,2; bonus bVit,2; bonus bLuk,1; },{},{}
 18817,Adv_Devil_School_Cap,Evoked Devil School Cap,5,20,,100,,4,,1,0xFFFFFFFE,63,2,256,,0,1,930,{ bonus bStr,2; bonus bVit,2; bonus bLuk,1; },{},{}
 18818,Red_Pencil_In_Mouth,Red Pencil In Mouth,5,20,,100,,0,,0,0xFFFFFFFF,63,2,1,,0,0,931,{ bonus bUnbreakableHelm,0; },{},{}
+18819,Blue_Pencil_In_Mouth,Red Pencil In Mouth,5,20,,100,,0,,0,0xFFFFFFFF,63,2,1,,0,0,932,{ bonus bUnbreakableHelm,0; },{},{}
 18821,Rainbow_Feather_Deco,Rainbow Feather Deco,5,20,,300,,5,,1,0xFFFFFFFF,63,2,256,,1,1,934,{ bonus bAtkRate,1; bonus bMatkRate,1; },{},{}
 //
 18828,2012RMSCNO1,2012RMSCNO1,5,0,,1000,,20,,1,0xFFFFFFFF,63,2,256,,95,0,942,{ bonus bAllStats,5; bonus bMdef,5; },{},{}
