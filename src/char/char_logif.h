@@ -14,20 +14,20 @@
 extern "C" {
 #endif
 
-int parse_char(int fd);
+int chclif_parse(int fd);
 
-void do_init_loginif(void);
-void do_final_loginif(void);
+void do_init_chlogif(void);
+void do_final_chlogif(void);
 
-int save_accreg2(unsigned char* buf, int len);
-int request_accreg2(int account_id, int char_id);
-int char_send_setacconline(int aid);
-int char_send_setaccoffline(int fd, int aid);
-void char_send_setallaccoffline(int fd);
-int char_send_reqaccdata(int fd, struct char_session_data *sd);
-int char_send_usercount(int users);
-int pincode_notifyLoginPinError( int account_id );
-int pincode_notifyLoginPinUpdate( int account_id, char* pin );
+int chlogif_save_accreg2(unsigned char* buf, int len);
+int chlogif_request_accreg2(int account_id, int char_id);
+int chlogif_send_setacconline(int aid);
+int chlogif_send_setaccoffline(int fd, int aid);
+void chlogif_send_setallaccoffline(int fd);
+int chlogif_send_reqaccdata(int fd, struct char_session_data *sd);
+int chlogif_send_usercount(int users);
+int chlogif_pincode_notifyLoginPinError( int account_id );
+int chlogif_pincode_notifyLoginPinUpdate( int account_id, char* pin );
 
 #ifdef	__cplusplus
 }

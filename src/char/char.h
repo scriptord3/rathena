@@ -197,44 +197,44 @@ struct fame_list taekwon_fame_list[MAX_FAME_LIST];
 #define DEFAULT_AUTOSAVE_INTERVAL 300*1000
 #define MAX_CHAR_BUF 144 //Max size (for WFIFOHEAD calls)
 
-int search_mapserver(unsigned short map, uint32 ip, uint16 port);
-int lan_subnetcheck(uint32 ip);
+int char_search_mapserver(unsigned short map, uint32 ip, uint16 port);
+int char_lan_subnetcheck(uint32 ip);
 
-int count_users(void);
-DBData create_online_char_data(DBKey key, va_list args);
+int char_count_users(void);
+DBData char_create_online_data(DBKey key, va_list args);
 int char_db_setoffline(DBKey key, DBData *data, va_list ap);
-void set_char_online(int map_id, int char_id, int account_id);
-void set_char_offline(int char_id, int account_id);
-void set_all_offline(int id);
-void disconnect_player(int account_id);
-int chardb_waiting_disconnect(int tid, unsigned int tick, int id, intptr_t data);
+void char_set_char_online(int map_id, int char_id, int account_id);
+void char_set_char_offline(int char_id, int account_id);
+void char_set_all_offline(int id);
+void char_disconnect_player(int account_id);
+int char_chardb_waiting_disconnect(int tid, unsigned int tick, int id, intptr_t data);
 
-int mmo_char_tobuf(uint8* buffer, struct mmo_charstatus* p);
-int mmo_char_tosql(int char_id, struct mmo_charstatus* p);
-int mmo_char_fromsql(int char_id, struct mmo_charstatus* p, bool load_everything);
-int mmo_chars_fromsql(struct char_session_data* sd, uint8* buf);
-int delete_char_sql(int char_id);
-int rename_char_sql(struct char_session_data *sd, int char_id);
-int divorce_char_sql(int partner_id1, int partner_id2);
-int memitemdata_to_sql(const struct item items[], int max, int id, int tableswitch);
+int char_mmo_char_tobuf(uint8* buffer, struct mmo_charstatus* p);
+int char_mmo_char_tosql(int char_id, struct mmo_charstatus* p);
+int char_mmo_char_fromsql(int char_id, struct mmo_charstatus* p, bool load_everything);
+int char_mmo_chars_fromsql(struct char_session_data* sd, uint8* buf);
+int char_delete_char_sql(int char_id);
+int char_rename_char_sql(struct char_session_data *sd, int char_id);
+int char_divorce_char_sql(int partner_id1, int partner_id2);
+int char_memitemdata_to_sql(const struct item items[], int max, int id, int tableswitch);
 
 int char_married(int pl1,int pl2);
 int char_child(int parent_id, int child_id);
 int char_family(int pl1,int pl2,int pl3);
 
 int char_loadName(int char_id, char* name);
-int check_char_name(char * name, char * esc_name);
+int char_check_char_name(char * name, char * esc_name);
 
-void pincode_decrypt( uint32 userSeed, char* pin );
-int pincode_compare( int fd, struct char_session_data* sd, char* pin );
+void char_pincode_decrypt( uint32 userSeed, char* pin );
+int char_pincode_compare( int fd, struct char_session_data* sd, char* pin );
 void char_auth_ok(int fd, struct char_session_data *sd);
-void set_char_charselect(int account_id);
+void char_set_charselect(int account_id);
 void char_read_fame_list(void);
 
 #if PACKETVER >= 20120307
-int make_new_char_sql(struct char_session_data* sd, char* name_, int slot, int hair_color, int hair_style);
+int char_make_new_char_sql(struct char_session_data* sd, char* name_, int slot, int hair_color, int hair_style);
 #else
-int make_new_char_sql(struct char_session_data* sd, char* name_, int str, int agi, int vit, int int_, int dex, int luk, int slot, int hair_color, int hair_style);
+int char_make_new_char_sql(struct char_session_data* sd, char* name_, int str, int agi, int vit, int int_, int dex, int luk, int slot, int hair_color, int hair_style);
 #endif
 
 //For use in packets that depend on an sd being present [Skotlex]

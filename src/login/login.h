@@ -41,7 +41,7 @@ struct login_session_data {
 	int fd;
 };
 
-#define MAX_SERVERS 30
+#define MAX_SERVERS 30 //max number of mapserv that could be attach
 struct mmo_char_server {
 	char name[20];
 	int fd;
@@ -139,7 +139,7 @@ bool check_password(const char* md5key, int passwdenc, const char* passwd, const
 int waiting_disconnect_timer(int tid, unsigned int tick, int id, intptr_t data);
 void remove_online_user(int account_id);
 struct online_login_data* add_online_user(int char_server, int account_id);
-int lan_subnetcheck(uint32 ip);
+int char_lan_subnetcheck(uint32 ip);
 
 int online_db_setoffline(DBKey key, DBData *data, va_list ap);
 DBData create_online_user(DBKey key, va_list args);

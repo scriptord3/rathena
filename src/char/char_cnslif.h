@@ -12,8 +12,8 @@
 extern "C" {
 #endif
 
-void do_init_charcnslif(void);
-void loginif_check_shutdown(void);
+void do_init_chcnslif(void);
+void chlogif_check_shutdown(void);
 
 
 #ifdef	__cplusplus

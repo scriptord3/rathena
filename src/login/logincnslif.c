@@ -91,7 +91,7 @@ int cnsl_get_options(int argc, char ** argv)
 //-----------------------
 // Console Command Parser [Wizputer]
 //-----------------------
-int parse_console(const char* buf){
+int chcnslif_parse(const char* buf){
 	char type[64];
 	char command[64];
 	int n=0;

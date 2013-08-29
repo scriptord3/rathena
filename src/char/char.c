@@ -71,8 +71,7 @@ DBMap* char_get_chardb() { return char_db_; }
 /**
  * @see DBCreateData
  */
-DBData create_online_char_data(DBKey key, va_list args)
-{
+DBData char_create_online_data(DBKey key, va_list args){
 	struct online_char_data* character;
 	CREATE(character, struct online_char_data, 1);
 	character->account_id = key.i;
@@ -83,11 +82,10 @@ DBData create_online_char_data(DBKey key, va_list args)
 	return db_ptr2data(character);
 }
 
-void set_char_charselect(int account_id)
-{
+void char_set_charselect(int account_id) {
 	struct online_char_data* character;
 
-	character = (struct online_char_data*)idb_ensure(online_char_db, account_id, create_online_char_data);
+	character = (struct online_char_data*)idb_ensure(online_char_db, account_id, char_create_online_data);
 
 	if( character->server > -1 )
 		if( server[character->server].users > 0 ) // Prevent this value from going negative.
@@ -97,16 +95,15 @@ void set_char_charselect(int account_id)
 	character->server = -1;
 
 	if(character->waiting_disconnect != INVALID_TIMER) {
-		delete_timer(character->waiting_disconnect, chardb_waiting_disconnect);
+		delete_timer(character->waiting_disconnect, char_chardb_waiting_disconnect);
 		character->waiting_disconnect = INVALID_TIMER;
 	}
 
-	char_send_setacconline(account_id);
+	chlogif_send_setacconline(account_id);
 
 }
 
-void set_char_online(int map_id, int char_id, int account_id)
-{
+void char_set_char_online(int map_id, int char_id, int account_id) {
 	struct online_char_data* character;
 	struct mmo_charstatus *cp;
 
@@ -115,7 +112,7 @@ void set_char_online(int map_id, int char_id, int account_id)
 		Sql_ShowDebug(sql_handle);
 
 	//Check to see for online conflicts
-	character = (struct online_char_data*)idb_ensure(online_char_db, account_id, create_online_char_data);
+	character = (struct online_char_data*)idb_ensure(online_char_db, account_id, char_create_online_data);
 	if( character->char_id != -1 && character->server > -1 && character->server != map_id )
 	{
 		ShowNotice("set_char_online: Character %d:%d marked in map server %d, but map server %d claims to have (%d:%d) online!\n",
@@ -132,7 +129,7 @@ void set_char_online(int map_id, int char_id, int account_id)
 
 	//Get rid of disconnect timer
 	if(character->waiting_disconnect != INVALID_TIMER) {
-		delete_timer(character->waiting_disconnect, chardb_waiting_disconnect);
+		delete_timer(character->waiting_disconnect, char_chardb_waiting_disconnect);
 		character->waiting_disconnect = INVALID_TIMER;
 	}
 
@@ -141,11 +138,10 @@ void set_char_online(int map_id, int char_id, int account_id)
 	inter_guild_CharOnline(char_id, cp?cp->guild_id:-1);
 
 	//Notify login server
-	char_send_setacconline(account_id);
+	chlogif_send_setacconline(account_id);
 }
 
-void set_char_offline(int char_id, int account_id)
-{
+void char_set_char_offline(int char_id, int account_id){
 	struct online_char_data* character;
 
 	if ( char_id == -1 )
@@ -171,7 +167,7 @@ void set_char_offline(int char_id, int account_id)
 				server[character->server].users--;
 
 		if(character->waiting_disconnect != INVALID_TIMER){
-			delete_timer(character->waiting_disconnect, chardb_waiting_disconnect);
+			delete_timer(character->waiting_disconnect, char_chardb_waiting_disconnect);
 			character->waiting_disconnect = INVALID_TIMER;
 		}
 
@@ -188,7 +184,7 @@ void set_char_offline(int char_id, int account_id)
 
 	//Remove char if 1- Set all offline, or 2- character is no longer connected to char-server.
 	if (char_id == -1 || character == NULL || character->fd == -1){
-		char_send_setaccoffline(login_fd,account_id);
+		chlogif_send_setaccoffline(login_fd,account_id);
 	}
 }
 
@@ -202,7 +198,7 @@ int char_db_setoffline(DBKey key, DBData *data, va_list ap) {
 		character->char_id = -1;
 		character->server = -1;
 		if(character->waiting_disconnect != INVALID_TIMER){
-			delete_timer(character->waiting_disconnect, chardb_waiting_disconnect);
+			delete_timer(character->waiting_disconnect, char_chardb_waiting_disconnect);
 			character->waiting_disconnect = INVALID_TIMER;
 		}
 	} else if (character->server == server)
@@ -213,8 +209,7 @@ int char_db_setoffline(DBKey key, DBData *data, va_list ap) {
 /**
  * @see DBApply
  */
-static int char_db_kickoffline(DBKey key, DBData *data, va_list ap)
-{
+static int char_db_kickoffline(DBKey key, DBData *data, va_list ap){
 	struct online_char_data* character = (struct online_char_data*)db_data2ptr(data);
 	int server_id = va_arg(ap, int);
 
@@ -225,15 +220,14 @@ static int char_db_kickoffline(DBKey key, DBData *data, va_list ap)
 	if (character->server > -1)
 		mapif_disconnectplayer(server[character->server].fd, character->account_id, character->char_id, 1);
 	else if (character->waiting_disconnect == INVALID_TIMER)
-		set_char_offline(character->char_id, character->account_id);
+		char_set_char_offline(character->char_id, character->account_id);
 	else
 		return 0; // fail
 
 	return 1;
 }
 
-void set_all_offline(int id)
-{
+void char_set_all_offline(int id){
 	if (id < 0)
 		ShowNotice("Sending all users offline.\n");
 	else
@@ -242,11 +236,10 @@ void set_all_offline(int id)
 
 	if (id >= 0 || login_fd <= 0 || session[login_fd]->flag.eof)
 		return;
-	char_send_setallaccoffline(login_fd);
+	chlogif_send_setallaccoffline(login_fd);
 }
 
-void set_all_offline_sql(void)
-{
+void char_set_all_offline_sql(void){
 	//Set all players to 'OFFLINE'
 	if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `online` = '0'", schema_config.char_db) )
 		Sql_ShowDebug(sql_handle);
@@ -259,18 +252,16 @@ void set_all_offline_sql(void)
 /**
  * @see DBCreateData
  */
-static DBData create_charstatus(DBKey key, va_list args)
-{
+static DBData char_create_charstatus(DBKey key, va_list args) {
 	struct mmo_charstatus *cp;
 	cp = (struct mmo_charstatus *) aCalloc(1,sizeof(struct mmo_charstatus));
 	cp->char_id = key.i;
 	return db_ptr2data(cp);
 }
 
-int inventory_to_sql(const struct item items[], int max, int id);
+int char_inventory_to_sql(const struct item items[], int max, int id);
 
-int mmo_char_tosql(int char_id, struct mmo_charstatus* p)
-{
+int char_mmo_char_tosql(int char_id, struct mmo_charstatus* p){
 	int i = 0;
 	int count = 0;
 	int diff = 0;
@@ -281,14 +272,14 @@ int mmo_char_tosql(int char_id, struct mmo_charstatus* p)
 
 	if (char_id!=p->char_id) return 0;
 
-	cp = idb_ensure(char_db_, char_id, create_charstatus);
+	cp = idb_ensure(char_db_, char_id, char_create_charstatus);
 
 	StringBuf_Init(&buf);
 	memset(save_status, 0, sizeof(save_status));
 
 	//map inventory data
 	if( memcmp(p->inventory, cp->inventory, sizeof(p->inventory)) ) {
-		if (!inventory_to_sql(p->inventory, MAX_INVENTORY, p->char_id))
+		if (!char_inventory_to_sql(p->inventory, MAX_INVENTORY, p->char_id))
 			strcat(save_status, " inventory");
 		else
 			errors++;
@@ -296,7 +287,7 @@ int mmo_char_tosql(int char_id, struct mmo_charstatus* p)
 
 	//map cart data
 	if( memcmp(p->cart, cp->cart, sizeof(p->cart)) ) {
-		if (!memitemdata_to_sql(p->cart, MAX_CART, p->char_id, TABLE_CART))
+		if (!char_memitemdata_to_sql(p->cart, MAX_CART, p->char_id, TABLE_CART))
 			strcat(save_status, " cart");
 		else
 			errors++;
@@ -304,7 +295,7 @@ int mmo_char_tosql(int char_id, struct mmo_charstatus* p)
 
 	//map storage data
 	if( memcmp(p->storage.items, cp->storage.items, sizeof(p->storage.items)) ) {
-		if (!memitemdata_to_sql(p->storage.items, MAX_STORAGE, p->account_id, TABLE_STORAGE))
+		if (!char_memitemdata_to_sql(p->storage.items, MAX_STORAGE, p->account_id, TABLE_STORAGE))
 			strcat(save_status, " storage");
 		else
 			errors++;
@@ -550,8 +541,7 @@ int mmo_char_tosql(int char_id, struct mmo_charstatus* p)
 }
 
 /// Saves an array of 'item' entries into the specified table.
-int memitemdata_to_sql(const struct item items[], int max, int id, int tableswitch)
-{
+int char_memitemdata_to_sql(const struct item items[], int max, int id, int tableswitch){
 	StringBuf buf;
 	SqlStmt* stmt;
 	int i;
@@ -709,7 +699,7 @@ int memitemdata_to_sql(const struct item items[], int max, int id, int tableswit
 }
 /* pretty much a copy of memitemdata_to_sql except it handles inventory_db exclusively,
  * - this is required because inventory db is the only one with the 'favorite' column. */
-int inventory_to_sql(const struct item items[], int max, int id) {
+int char_inventory_to_sql(const struct item items[], int max, int id) {
 	StringBuf buf;
 	SqlStmt* stmt;
 	int i;
@@ -849,12 +839,11 @@ int inventory_to_sql(const struct item items[], int max, int id) {
 }
 
 
-int mmo_char_tobuf(uint8* buf, struct mmo_charstatus* p);
+int char_mmo_char_tobuf(uint8* buf, struct mmo_charstatus* p);
 
 //=====================================================================================================
 // Loads the basic character rooster for the given account. Returns total buffer used.
-int mmo_chars_fromsql(struct char_session_data* sd, uint8* buf)
-{
+int char_mmo_chars_fromsql(struct char_session_data* sd, uint8* buf) {
 	SqlStmt* stmt;
 	struct mmo_charstatus p;
 	int j = 0, i;
@@ -929,7 +918,7 @@ int mmo_chars_fromsql(struct char_session_data* sd, uint8* buf)
 	{
 		p.last_point.map = mapindex_name2id(last_map);
 		sd->found_char[p.slot] = p.char_id;
-		j += mmo_char_tobuf(WBUFP(buf, j), &p);
+		j += char_mmo_char_tobuf(WBUFP(buf, j), &p);
 
 		// Addon System
 		// store the required info into the session
@@ -943,8 +932,7 @@ int mmo_chars_fromsql(struct char_session_data* sd, uint8* buf)
 }
 
 //=====================================================================================================
-int mmo_char_fromsql(int char_id, struct mmo_charstatus* p, bool load_everything)
-{
+int char_mmo_char_fromsql(int char_id, struct mmo_charstatus* p, bool load_everything) {
 	int i,j;
 	char t_msg[128] = "";
 	struct mmo_charstatus* cp;
@@ -1221,14 +1209,13 @@ int mmo_char_fromsql(int char_id, struct mmo_charstatus* p, bool load_everything
 	SqlStmt_Free(stmt);
 	StringBuf_Destroy(&buf);
 
-	cp = idb_ensure(char_db_, char_id, create_charstatus);
+	cp = idb_ensure(char_db_, char_id, char_create_charstatus);
 	memcpy(cp, p, sizeof(struct mmo_charstatus));
 	return 1;
 }
 
 //==========================================================================================================
-int mmo_char_sql_init(void)
-{
+int char_mmo_sql_init(void) {
 	char_db_= idb_alloc(DB_OPT_RELEASE_DATA);
 
 	ShowStatus("Characters per Account: '%d'.\n", char_config.char_per_account);
@@ -1240,7 +1227,7 @@ int mmo_char_sql_init(void)
 
 	// Force all users offline in sql when starting char-server
 	// (useful when servers crashs and don't clean the database)
-	set_all_offline_sql();
+	char_set_all_offline_sql();
 
 	return 0;
 }
@@ -1248,7 +1235,7 @@ int mmo_char_sql_init(void)
 //-----------------------------------
 // Function to change chararcter's names
 //-----------------------------------
-int rename_char_sql(struct char_session_data *sd, int char_id)
+int char_rename_char_sql(struct char_session_data *sd, int char_id)
 {
 	struct mmo_charstatus char_dat;
 	char esc_name[NAME_LENGTH*2+1];
@@ -1256,7 +1243,7 @@ int rename_char_sql(struct char_session_data *sd, int char_id)
 	if( sd->new_name[0] == 0 ) // Not ready for rename
 		return 2;
 
-	if( !mmo_char_fromsql(char_id, &char_dat, false) ) // Only the short data is needed.
+	if( !char_mmo_char_fromsql(char_id, &char_dat, false) ) // Only the short data is needed.
 		return 2;
 
 	if( char_dat.rename == 0 )
@@ -1296,7 +1283,7 @@ int rename_char_sql(struct char_session_data *sd, int char_id)
 	return 0;
 }
 
-int check_char_name(char * name, char * esc_name)
+int char_check_char_name(char * name, char * esc_name)
 {
 	int i;
 
@@ -1351,12 +1338,11 @@ int check_char_name(char * name, char * esc_name)
 // Function to create a new character
 //-----------------------------------
 #if PACKETVER >= 20120307
-int make_new_char_sql(struct char_session_data* sd, char* name_, int slot, int hair_color, int hair_style) {
+int char_make_new_char_sql(struct char_session_data* sd, char* name_, int slot, int hair_color, int hair_style) {
 	int str = 1, agi = 1, vit = 1, int_ = 1, dex = 1, luk = 1;
 #else
-int make_new_char_sql(struct char_session_data* sd, char* name_, int str, int agi, int vit, int int_, int dex, int luk, int slot, int hair_color, int hair_style) {
+int char_make_new_char_sql(struct char_session_data* sd, char* name_, int str, int agi, int vit, int int_, int dex, int luk, int slot, int hair_color, int hair_style) {
 #endif
-
 	char name[NAME_LENGTH];
 	char esc_name[NAME_LENGTH*2+1];
 	int char_id, flag, k;
@@ -1365,7 +1351,7 @@ int make_new_char_sql(struct char_session_data* sd, char* name_, int str, int ag
 	normalize_name(name,TRIM_CHARS);
 	Sql_EscapeStringLen(sql_handle, esc_name, name, strnlen(name, NAME_LENGTH));
 
-	flag = check_char_name(name,esc_name);
+	flag = char_check_char_name(name,esc_name);
 	if( flag < 0 )
 		return flag;
 
@@ -1383,7 +1369,6 @@ int make_new_char_sql(struct char_session_data* sd, char* name_, int str, int ag
 #else
 		return -2; // invalid input
 #endif
-
 
 	// check the number of already existing chars in this account
 	if( char_config.char_per_account != 0 ) {
@@ -1446,12 +1431,12 @@ int make_new_char_sql(struct char_session_data* sd, char* name_, int str, int ag
 /*----------------------------------------------------------------------------------------------------------*/
 /* Divorce Players */
 /*----------------------------------------------------------------------------------------------------------*/
-int divorce_char_sql(int partner_id1, int partner_id2){
+int char_divorce_char_sql(int partner_id1, int partner_id2){
 	if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `partner_id`='0' WHERE `char_id`='%d' OR `char_id`='%d' LIMIT 2", schema_config.char_db, partner_id1, partner_id2) )
 		Sql_ShowDebug(sql_handle);
 	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE (`nameid`='%d' OR `nameid`='%d') AND (`char_id`='%d' OR `char_id`='%d') LIMIT 2", schema_config.inventory_db, WEDDING_RING_M, WEDDING_RING_F, partner_id1, partner_id2) )
 		Sql_ShowDebug(sql_handle);
-	char_send_ackdivorce(partner_id1, partner_id2);
+	chmapif_send_ackdivorce(partner_id1, partner_id2);
 	return 0;
 }
 
@@ -1461,8 +1446,7 @@ int divorce_char_sql(int partner_id1, int partner_id2){
 /* Returns 0 if successful
  * Returns < 0 for error
  */
-int delete_char_sql(int char_id)
-{
+int char_delete_char_sql(int char_id){
 	char name[NAME_LENGTH];
 	char esc_name[NAME_LENGTH*2+1]; //Name needs be escaped.
 	int account_id, party_id, guild_id, hom_id, base_level, partner_id, father_id, mother_id, elemental_id;
@@ -1504,7 +1488,7 @@ int delete_char_sql(int char_id)
 
 	/* Divorce [Wizputer] */
 	if( partner_id )
-		divorce_char_sql(char_id, partner_id);
+		char_divorce_char_sql(char_id, partner_id);
 
 	/* De-addopt [Zephyrus] */
 	if( father_id || mother_id )
@@ -1520,7 +1504,7 @@ int delete_char_sql(int char_id)
 		WBUFL(buf,2) = father_id;
 		WBUFL(buf,6) = mother_id;
 		WBUFL(buf,10) = char_id; // Baby
-		mapif_sendall(buf,14);
+		chmapif_sendall(buf,14);
 	}
 
 	//Make the character leave the party [Skotlex]
@@ -1622,7 +1606,7 @@ int delete_char_sql(int char_id)
 //---------------------------------------------------------------------
 // This function return the number of online players in all map-servers
 //---------------------------------------------------------------------
-int count_users(void)
+int char_count_users(void)
 {
 	int i, users;
 
@@ -1638,7 +1622,7 @@ int count_users(void)
 // Writes char data to the buffer in the format used by the client.
 // Used in packets 0x6b (chars info) and 0x6d (new char info)
 // Returns the size
-int mmo_char_tobuf(uint8* buffer, struct mmo_charstatus* p)
+int char_mmo_char_tobuf(uint8* buffer, struct mmo_charstatus* p)
 {
 	unsigned short offset = 0;
 	uint8* buf;
@@ -1789,7 +1773,7 @@ int char_family(int cid1, int cid2, int cid3)
 //----------------------------------------------------------------------
 // Force disconnection of an online player (with account value) by [Yor]
 //----------------------------------------------------------------------
-void disconnect_player(int account_id)
+void char_disconnect_player(int account_id)
 {
 	int i;
 	struct char_session_data* sd;
@@ -1811,25 +1795,25 @@ void char_auth_ok(int fd, struct char_session_data *sd) {
 		{	//Character already online. KICK KICK KICK
 			mapif_disconnectplayer(server[character->server].fd, character->account_id, character->char_id, 2);
 			if (character->waiting_disconnect == INVALID_TIMER)
-				character->waiting_disconnect = add_timer(gettick()+20000, chardb_waiting_disconnect, character->account_id, 0);
-			char_send_auth_result(fd,8);
+				character->waiting_disconnect = add_timer(gettick()+20000, char_chardb_waiting_disconnect, character->account_id, 0);
+			chclif_send_auth_result(fd,8);
 			return;
 		}
 		if (character->fd >= 0 && character->fd != fd)
 		{	//There's already a connection from this account that hasn't picked a char yet.
-			char_send_auth_result(fd,8);
+			chclif_send_auth_result(fd,8);
 			return;
 		}
 		character->fd = fd;
 	}
 
-	char_send_reqaccdata(login_fd,sd); // request account data
+	chlogif_send_reqaccdata(login_fd,sd); // request account data
 
 	// mark session as 'authed'
 	sd->auth = true;
 
 	// set char online on charserver
-	set_char_charselect(sd->account_id);
+	char_set_charselect(sd->account_id);
 
 	// continues when account data is received...
 }
@@ -1895,8 +1879,7 @@ void char_read_fame_list(void)
 
 //Loads a character's name and stores it in the buffer given (must be NAME_LENGTH in size)
 //Returns 1 on found, 0 on not found (buffer is filled with Unknown char name)
-int char_loadName(int char_id, char* name)
-{
+int char_loadName(int char_id, char* name){
 	char* data;
 	size_t len;
 
@@ -1915,13 +1898,9 @@ int char_loadName(int char_id, char* name)
 	return 0;
 }
 
-int search_mapserver(unsigned short map, uint32 ip, uint16 port);
-
-
 // Searches for the mapserver that has a given map (and optionally ip/port, if not -1).
 // If found, returns the server's index in the 'server' array (otherwise returns -1).
-int search_mapserver(unsigned short map, uint32 ip, uint16 port)
-{
+int char_search_mapserver(unsigned short map, uint32 ip, uint16 port){
 	int i, j;
 
 	for(i = 0; i < ARRAYLENGTH(server); i++)
@@ -1942,7 +1921,7 @@ int search_mapserver(unsigned short map, uint32 ip, uint16 port)
 //--------------------------------------------
 // Test to know if an IP come from LAN or WAN.
 //--------------------------------------------
-int lan_subnetcheck(uint32 ip){
+int char_lan_subnetcheck(uint32 ip){
 	int i;
 	ARR_FIND( 0, subnet_count, i, (subnet[i].char_ip & subnet[i].mask) == (ip & subnet[i].mask) );
 	if( i < subnet_count ) {
@@ -1956,8 +1935,8 @@ int lan_subnetcheck(uint32 ip){
 
 
 
-int broadcast_user_count(int tid, unsigned int tick, int id, intptr_t data){
-	int users = count_users();
+int char_broadcast_user_count(int tid, unsigned int tick, int id, intptr_t data){
+	int users = char_count_users();
 
 	// only send an update when needed
 	static int prev_users = 0;
@@ -1965,13 +1944,13 @@ int broadcast_user_count(int tid, unsigned int tick, int id, intptr_t data){
 		return 0;
 	prev_users = users;
 
-	char_send_usercount(users);
-	char_sendall_playercount(users);
+	chlogif_send_usercount(users);
+	chmapif_sendall_playercount(users);
 	return 0;
 }
 
 
-void pincode_decrypt( uint32 userSeed, char* pin ){
+void char_pincode_decrypt( uint32 userSeed, char* pin ){
 	int i, pos;
 	char tab[10] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 	char *buf;
@@ -1996,15 +1975,15 @@ void pincode_decrypt( uint32 userSeed, char* pin ){
 	free( buf );
 }
 
-int pincode_compare( int fd, struct char_session_data* sd, char* pin ){
+int char_pincode_compare( int fd, struct char_session_data* sd, char* pin ){
 	if( strcmp( sd->pincode, pin ) == 0 ){
 		sd->pincode_try = 0;
 		return 1;
 	}else{
-		pincode_sendstate( fd, sd, PINCODE_WRONG );
+		chclif_pincode_sendstate( fd, sd, PINCODE_WRONG );
 
 		if( pincode_config.pincode_maxtry && ++sd->pincode_try >= pincode_config.pincode_maxtry ){
-			pincode_notifyLoginPinError( sd->account_id );
+			chlogif_pincode_notifyLoginPinError( sd->account_id );
 		}
 
 		return 0;
@@ -2016,13 +1995,13 @@ int pincode_compare( int fd, struct char_session_data* sd, char* pin ){
 //Invoked 15 seconds after mapif_disconnectplayer in case the map server doesn't
 //replies/disconnect the player we tried to kick. [Skotlex]
 //------------------------------------------------
-int chardb_waiting_disconnect(int tid, unsigned int tick, int id, intptr_t data)
+int char_chardb_waiting_disconnect(int tid, unsigned int tick, int id, intptr_t data)
 {
 	struct online_char_data* character;
 	if ((character = (struct online_char_data*)idb_get(online_char_db, id)) != NULL && character->waiting_disconnect == tid)
 	{	//Mark it offline due to timeout.
 		character->waiting_disconnect = INVALID_TIMER;
-		set_char_offline(character->char_id, character->account_id);
+		char_set_char_offline(character->char_id, character->account_id);
 	}
 	return 0;
 }
@@ -2030,22 +2009,21 @@ int chardb_waiting_disconnect(int tid, unsigned int tick, int id, intptr_t data)
 /**
  * @see DBApply
  */
-static int online_data_cleanup_sub(DBKey key, DBData *data, va_list ap)
+static int char_online_data_cleanup_sub(DBKey key, DBData *data, va_list ap)
 {
 	struct online_char_data *character= db_data2ptr(data);
 	if (character->fd != -1)
 		return 0; //Character still connected
 	if (character->server == -2) //Unknown server.. set them offline
-		set_char_offline(character->char_id, character->account_id);
+		char_set_char_offline(character->char_id, character->account_id);
 	if (character->server < 0)
 		//Free data from players that have not been online for a while.
 		db_remove(online_char_db, key);
 	return 0;
 }
 
-static int online_data_cleanup(int tid, unsigned int tick, int id, intptr_t data)
-{
-	online_char_db->foreach(online_char_db, online_data_cleanup_sub);
+static int char_online_data_cleanup(int tid, unsigned int tick, int id, intptr_t data){
+	online_char_db->foreach(online_char_db, char_online_data_cleanup_sub);
 	return 0;
 }
 
@@ -2055,8 +2033,7 @@ static int online_data_cleanup(int tid, unsigned int tick, int id, intptr_t data
 // Reading Lan Support configuration
 // Rewrote: Anvanced subnet check [LuzZza]
 //----------------------------------
-int char_lan_config_read(const char *lancfgName)
-{
+int char_lan_config_read(const char *lancfgName) {
 	FILE *fp;
 	int line_num = 0;
 	char line[1024], w1[64], w2[64], w3[64], w4[64];
@@ -2105,8 +2082,7 @@ int char_lan_config_read(const char *lancfgName)
 	return 0;
 }
 
-void sql_config_read(const char* cfgName)
-{
+void char_sql_config_read(const char* cfgName) {
 	char line[1024], w1[1024], w2[1024];
 	FILE* fp;
 
@@ -2183,7 +2159,7 @@ void sql_config_read(const char* cfgName)
 			safestrncpy(schema_config.mercenary_owner_db,w2,sizeof(schema_config.mercenary_owner_db));
 		//support the import command, just like any other config
 		else if(!strcmpi(w1,"import"))
-			sql_config_read(w2);
+			char_sql_config_read(w2);
 	}
 	fclose(fp);
 	ShowInfo("Done reading %s.\n", cfgName);
@@ -2276,8 +2252,7 @@ void char_set_defaults(){
 	charserv_config.guild_exp_rate = 100;
 }
 
-int char_config_read(const char* cfgName)
-{
+int char_config_read(const char* cfgName){
 	char line[1024], w1[1024], w2[1024];
 	FILE* fp = fopen(cfgName, "r");
 
@@ -2490,16 +2465,16 @@ void do_final(void)
 {
 	ShowStatus("Terminating...\n");
 
-	set_all_offline(-1);
-	set_all_offline_sql();
+	char_set_all_offline(-1);
+	char_set_all_offline_sql();
 
 	inter_final();
 
 	flush_fifos();
 
 	do_final_msg();
-	do_final_mapif();
-	do_final_loginif();
+	do_final_chmapif();
+	do_final_chlogif();
 
 	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s`", schema_config.ragsrvinfo_db) )
 		Sql_ShowDebug(sql_handle);
@@ -2534,8 +2509,7 @@ void do_abort(void)
 }
 
 /// Called when a terminate signal is received.
-void do_shutdown(void)
-{
+void do_shutdown(void) {
 	if( runflag != CHARSERVER_ST_SHUTDOWN )
 	{
 		int id;
@@ -2543,8 +2517,8 @@ void do_shutdown(void)
 		ShowStatus("Shutting down...\n");
 		// TODO proper shutdown procedure; wait for acks?, kick all characters, ... [FlavoJS]
 		for( id = 0; id < ARRAYLENGTH(server); ++id )
-			mapif_server_reset(id);
-		loginif_check_shutdown();
+			chmapif_server_reset(id);
+		chlogif_check_shutdown();
 		flush_fifos();
 		runflag = CORE_ST_STOP;
 	}
@@ -2573,7 +2547,7 @@ int do_init(int argc, char **argv)
 	char_config_read(CHAR_CONF_NAME);
 	char_lan_config_read(LAN_CONF_NAME);
 	char_set_default_sql();
-	sql_config_read(SQL_CONF_NAME);
+	char_sql_config_read(SQL_CONF_NAME);
 	msg_config_read(MSG_CONF_NAME_EN);
 
 	if (strcmp(charserv_config.userid, "s1")==0 && strcmp(charserv_config.passwd, "p1")==0) {
@@ -2586,7 +2560,7 @@ int do_init(int argc, char **argv)
 
 	auth_db = idb_alloc(DB_OPT_RELEASE_DATA);
 	online_char_db = idb_alloc(DB_OPT_RELEASE_DATA);
-	mmo_char_sql_init();
+	char_mmo_sql_init();
 	char_read_fame_list(); //Read fame lists.
 
 	if ((naddr_ != 0) && (!(charserv_config.login_ip) || !(charserv_config.char_ip) ))
@@ -2608,19 +2582,19 @@ int do_init(int argc, char **argv)
 		}
 	}
 
-	do_init_loginif();
-	do_init_mapif();
+	do_init_chlogif();
+	do_init_chmapif();
 
 	// periodically update the overall user count on all mapservers + login server
-	add_timer_func_list(broadcast_user_count, "broadcast_user_count");
-	add_timer_interval(gettick() + 1000, broadcast_user_count, 0, 0, 5 * 1000);
+	add_timer_func_list(char_broadcast_user_count, "broadcast_user_count");
+	add_timer_interval(gettick() + 1000, char_broadcast_user_count, 0, 0, 5 * 1000);
 
 	// Timer to clear (online_char_db)
-	add_timer_func_list(chardb_waiting_disconnect, "chardb_waiting_disconnect");
+	add_timer_func_list(char_chardb_waiting_disconnect, "chardb_waiting_disconnect");
 
 	// Online Data timers (checking if char still connected)
-	add_timer_func_list(online_data_cleanup, "online_data_cleanup");
-	add_timer_interval(gettick() + 1000, online_data_cleanup, 0, 0, 600 * 1000);
+	add_timer_func_list(char_online_data_cleanup, "online_data_cleanup");
+	add_timer_interval(gettick() + 1000, char_online_data_cleanup, 0, 0, 600 * 1000);
 
 	//Cleaning the tables for NULL entrys @ startup [Sirius]
 	//Chardb clean
@@ -2635,7 +2609,7 @@ int do_init(int argc, char **argv)
 	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '0' AND `account_id` = '0' AND `char_id` = '0'", schema_config.guild_member_db) )
 		Sql_ShowDebug(sql_handle);
 
-	set_defaultparse(parse_char);
+	set_defaultparse(chclif_parse);
 
 	if( (char_fd = make_listen_bind(charserv_config.bind_ip,charserv_config.char_port)) == -1 ) {
 		ShowFatalError("Failed to bind to port '"CL_WHITE"%d"CL_RESET"'\n",charserv_config.char_port);
@@ -2648,7 +2622,7 @@ int do_init(int argc, char **argv)
 		runflag = CHARSERVER_ST_RUNNING;
 	}
 
-	do_init_charcnslif();
+	do_init_chcnslif();
 
 	ShowStatus("The char-server is "CL_GREEN"ready"CL_RESET" (Server is listening on the port %d).\n\n", charserv_config.char_port);
 

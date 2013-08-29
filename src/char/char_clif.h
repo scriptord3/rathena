@@ -14,12 +14,12 @@
 extern "C" {
 #endif
 
-int parse_char(int fd);
+int chclif_parse(int fd);
 
-void pincode_sendstate( int fd, struct char_session_data* sd, enum pincode_state state );
-void char_send_auth_result(int fd,char result);
+void chclif_pincode_sendstate( int fd, struct char_session_data* sd, enum pincode_state state );
+void chclif_send_auth_result(int fd,char result);
 
-void mmo_char_send(int fd, struct char_session_data* sd);
+void chclif_mmo_char_send(int fd, struct char_session_data* sd);
 
 
 #ifdef	__cplusplus

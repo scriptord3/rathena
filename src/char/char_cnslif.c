@@ -33,7 +33,7 @@ void display_helpscreen(bool do_exit)
 }
 
 // Console Command Parser [Wizputer]
-int parse_console(const char* buf)
+int chcnslif_parse(const char* buf)
 {
 	char type[64];
 	char command[64];
@@ -69,7 +69,7 @@ int parse_console(const char* buf)
 	return 0;
 }
 
-void do_init_charcnslif(void){
+void do_init_chcnslif(void){
 	if( charserv_config.console ){ //start listening
 		add_timer_func_list(parse_console_timer, "parse_console_timer");
 		add_timer_interval(gettick()+1000, parse_console_timer, 0, 0, 1000); //start in 1s each 1sec

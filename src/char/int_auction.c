@@ -136,7 +136,7 @@ static void mapif_Auction_message(int char_id, unsigned char result)
 	WBUFW(buf,0) = 0x3854;
 	WBUFL(buf,2) = char_id;
 	WBUFL(buf,6) = result;
-	mapif_sendall(buf,7);
+	chmapif_sendall(buf,7);
 }
 
 static int auction_end_timer(int tid, unsigned int tick, int id, intptr_t data)

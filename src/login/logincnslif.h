@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-int parse_console(const char* buf);
+int chcnslif_parse(const char* buf);
 
 void do_init_logincnslif(void);
 

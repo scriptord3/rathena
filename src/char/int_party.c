@@ -372,9 +372,9 @@ static void mapif_party_info(int fd, struct party* p, int char_id)
 	memcpy(WBUFP(buf,8), p, sizeof(struct party));
 
 	if(fd<0)
-		mapif_sendall(buf,WBUFW(buf,2));
+		chmapif_sendall(buf,WBUFW(buf,2));
 	else
-		mapif_send(fd,buf,WBUFW(buf,2));
+		chmapif_send(fd,buf,WBUFW(buf,2));
 }
 
 //Whether or not additional party members
@@ -401,9 +401,9 @@ int mapif_party_optionchanged(int fd,struct party *p,int account_id,int flag)
 	WBUFW(buf,12)=p->item;
 	WBUFB(buf,14)=flag;
 	if(flag==0)
-		mapif_sendall(buf,15);
+		chmapif_sendall(buf,15);
 	else
-		mapif_send(fd,buf,15);
+		chmapif_send(fd,buf,15);
 	return 0;
 }
 
@@ -415,7 +415,7 @@ int mapif_party_withdraw(int party_id,int account_id, int char_id) {
 	WBUFL(buf,2) = party_id;
 	WBUFL(buf,6) = account_id;
 	WBUFL(buf,10) = char_id;
-	mapif_sendall(buf, 14);
+	chmapif_sendall(buf, 14);
 	return 0;
 }
 
@@ -431,7 +431,7 @@ int mapif_party_membermoved(struct party *p,int idx)
 	WBUFW(buf,14) = p->member[idx].map;
 	WBUFB(buf,16) = p->member[idx].online;
 	WBUFW(buf,17) = p->member[idx].lv;
-	mapif_sendall(buf, 19);
+	chmapif_sendall(buf, 19);
 	return 0;
 }
 
@@ -442,7 +442,7 @@ int mapif_party_broken(int party_id,int flag)
 	WBUFW(buf,0)=0x3826;
 	WBUFL(buf,2)=party_id;
 	WBUFB(buf,6)=flag;
-	mapif_sendall(buf,7);
+	chmapif_sendall(buf,7);
 	//printf("int_party: broken %d\n",party_id);
 	return 0;
 }
@@ -456,7 +456,7 @@ int mapif_party_message(int party_id,int account_id,char *mes,int len, int sfd)
 	WBUFL(buf,4)=party_id;
 	WBUFL(buf,8)=account_id;
 	memcpy(WBUFP(buf,12),mes,len);
-	mapif_sendallwos(sfd, buf,len+12);
+	chmapif_sendallwos(sfd, buf,len+12);
 	return 0;
 }
 

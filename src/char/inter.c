@@ -779,7 +779,7 @@ int mapif_broadcast(unsigned char *mes, int len, unsigned long fontColor, short 
 	WBUFW(buf,12) = fontAlign;
 	WBUFW(buf,14) = fontY;
 	memcpy(WBUFP(buf,16), mes, len - 16);
-	mapif_sendallwos(sfd, buf, len);
+	chmapif_sendallwos(sfd, buf, len);
 
 	if (buf)
 		aFree(buf);
@@ -798,7 +798,7 @@ int mapif_wis_message(struct WisData *wd)
 	memcpy(WBUFP(buf, 8), wd->src, NAME_LENGTH);
 	memcpy(WBUFP(buf,32), wd->dst, NAME_LENGTH);
 	memcpy(WBUFP(buf,56), wd->msg, wd->len);
-	wd->count = mapif_sendall(buf,WBUFW(buf,2));
+	wd->count = chmapif_sendall(buf,WBUFW(buf,2));
 
 	return 0;
 }
@@ -811,7 +811,7 @@ int mapif_wis_end(struct WisData *wd, int flag)
 	WBUFW(buf, 0)=0x3802;
 	memcpy(WBUFP(buf, 2),wd->src,24);
 	WBUFB(buf,26)=flag;
-	mapif_send(wd->fd,buf,27);
+	chmapif_send(wd->fd,buf,27);
 	return 0;
 }
 
@@ -819,7 +819,7 @@ int mapif_wis_end(struct WisData *wd, int flag)
 static void mapif_account_reg(int fd, unsigned char *src)
 {
 	WBUFW(src,0)=0x3804; //NOTE: writing to RFIFO
-	mapif_sendallwos(fd, src, WBUFW(src,2));
+	chmapif_sendallwos(fd, src, WBUFW(src,2));
 }
 
 // Send the requested account_reg
@@ -946,7 +946,7 @@ int mapif_parse_WisRequest(int fd)
 		WBUFW(buf, 0) = 0x3802;
 		memcpy(WBUFP(buf, 2), RFIFOP(fd, 4), NAME_LENGTH);
 		WBUFB(buf,26) = 1; // flag: 0: success to send wisper, 1: target character is not loged in?, 2: ignored by target
-		mapif_send(fd, buf, 27);
+		chmapif_send(fd, buf, 27);
 	}
 	else
 	{// Character exists. So, ask all map-servers
@@ -961,7 +961,7 @@ int mapif_parse_WisRequest(int fd)
 			WBUFW(buf, 0) = 0x3802;
 			memcpy(WBUFP(buf, 2), RFIFOP(fd, 4), NAME_LENGTH);
 			WBUFB(buf,26) = 1; // flag: 0: success to send wisper, 1: target character is not loged in?, 2: ignored by target
-			mapif_send(fd, buf, 27);
+			chmapif_send(fd, buf, 27);
 		}
 		else
 		{
@@ -1015,7 +1015,7 @@ int mapif_parse_WisToGM(int fd)
 
 	memcpy(WBUFP(buf,0), RFIFOP(fd,0), RFIFOW(fd,2));
 	WBUFW(buf, 0) = 0x3803;
-	mapif_sendall(buf, RFIFOW(fd,2));
+	chmapif_sendall(buf, RFIFOW(fd,2));
 
 	return 0;
 }
@@ -1035,7 +1035,7 @@ int mapif_parse_Registry(int fd)
 		max = ACCOUNT_REG_NUM;
 	break;
 	case 1: //Account2 registry, must be sent over to login server.
-		return save_accreg2(RFIFOP(fd,4), RFIFOW(fd,2)-4);
+		return chlogif_save_accreg2(RFIFOP(fd,4), RFIFOW(fd,2)-4);
 	default:
 		return 1;
 	}
@@ -1062,7 +1062,7 @@ int mapif_parse_RegistryRequest(int fd)
 	//Load Account Registry
 	if (RFIFOB(fd,11)) mapif_account_reg_reply(fd,RFIFOL(fd,2),RFIFOL(fd,6),2);
 	//Ask Login Server for Account2 values.
-	if (RFIFOB(fd,10)) request_accreg2(RFIFOL(fd,2),RFIFOL(fd,6));
+	if (RFIFOB(fd,10)) chlogif_request_accreg2(RFIFOL(fd,2),RFIFOL(fd,6));
 	return 1;
 }
 

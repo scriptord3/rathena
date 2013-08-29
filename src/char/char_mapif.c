@@ -14,8 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int mapif_sendall(unsigned char *buf, unsigned int len)
-{
+int chmapif_sendall(unsigned char *buf, unsigned int len){
 	int i, c;
 
 	c = 0;
@@ -32,8 +31,7 @@ int mapif_sendall(unsigned char *buf, unsigned int len)
 	return c;
 }
 
-int mapif_sendallwos(int sfd, unsigned char *buf, unsigned int len)
-{
+int chmapif_sendallwos(int sfd, unsigned char *buf, unsigned int len){
 	int i, c;
 
 	c = 0;
@@ -50,8 +48,7 @@ int mapif_sendallwos(int sfd, unsigned char *buf, unsigned int len)
 	return c;
 }
 
-int mapif_send(int fd, unsigned char *buf, unsigned int len)
-{
+int chmapif_send(int fd, unsigned char *buf, unsigned int len){
 	if (fd >= 0) {
 		int i;
 		ARR_FIND( 0, ARRAYLENGTH(server), i, fd == server[i].fd );
@@ -69,8 +66,7 @@ int mapif_send(int fd, unsigned char *buf, unsigned int len)
 
 
 // Send map-servers the fame ranking lists
-int char_send_fame_list(int fd)
-{
+int chmapif_send_fame_list(int fd){
 	int i, len = 8;
 	unsigned char buf[32000];
 
@@ -98,32 +94,31 @@ int char_send_fame_list(int fd)
 	WBUFW(buf, 2) = len;
 
 	if (fd != -1)
-		mapif_send(fd, buf, len);
+		chmapif_send(fd, buf, len);
 	else
-		mapif_sendall(buf, len);
+		chmapif_sendall(buf, len);
 
 	return 0;
 }
 
-void char_update_fame_list(int type, int index, int fame)
-{
+void chmapif_update_fame_list(int type, int index, int fame) {
 	unsigned char buf[8];
 	WBUFW(buf,0) = 0x2b22;
 	WBUFB(buf,2) = type;
 	WBUFB(buf,3) = index;
 	WBUFL(buf,4) = fame;
-	mapif_sendall(buf, 8);
+	chmapif_sendall(buf, 8);
 }
 
-void char_sendall_playercount(int users){
+void chmapif_sendall_playercount(int users){
 	uint8 buf[6];
 	// send number of players to all map-servers
 	WBUFW(buf,0) = 0x2b00;
 	WBUFL(buf,2) = users;
-	mapif_sendall(buf,6);
+	chmapif_sendall(buf,6);
 }
 
-int char_parsemap_getmapname(int fd, int id){
+int chmapif_parse_getmapname(int fd, int id){
 	int j = 0, i = 0;
 	if (RFIFOREST(fd) < 4 || RFIFOREST(fd) < RFIFOW(fd,2))
 		return 0;
@@ -145,7 +140,7 @@ int char_parsemap_getmapname(int fd, int id){
 	memcpy(WFIFOP(fd,3), charserv_config.wisp_server_name, NAME_LENGTH);
 	WFIFOSET(fd,3+NAME_LENGTH);
 
-	char_send_fame_list(fd); //Send fame list.
+	chmapif_send_fame_list(fd); //Send fame list.
 
 	{
 		unsigned char buf[16384];
@@ -159,7 +154,7 @@ int char_parsemap_getmapname(int fd, int id){
 			WBUFL(buf,4) = htonl(server[id].ip);
 			WBUFW(buf,8) = htons(server[id].port);
 			memcpy(WBUFP(buf,10), RFIFOP(fd,4), j * 4);
-			mapif_sendallwos(fd, buf, WBUFW(buf,2));
+			chmapif_sendallwos(fd, buf, WBUFW(buf,2));
 		}
 		// Transmitting the maps of the other map-servers to the new map-server
 		for(x = 0; x < ARRAYLENGTH(server); x++) {
@@ -183,7 +178,7 @@ int char_parsemap_getmapname(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_askscdata(int fd, int id){
+int chmapif_parse_askscdata(int fd, int id){
 	if (RFIFOREST(fd) < 10)
 		return 0;
 	{
@@ -237,7 +232,7 @@ int char_parsemap_askscdata(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_getusercount(int fd, int id){
+int chmapif_parse_getusercount(int fd, int id){
 	if (RFIFOREST(fd) < 4)
 		return 0;
 	if (RFIFOW(fd,2) != server[id].users) {
@@ -248,7 +243,7 @@ int char_parsemap_getusercount(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_regmapuser(int fd, int id){
+int chmapif_parse_regmapuser(int fd, int id){
 	int i;
 	if (RFIFOREST(fd) < 6 || RFIFOREST(fd) < RFIFOW(fd,2))
 		return 0;
@@ -263,7 +258,7 @@ int char_parsemap_regmapuser(int fd, int id){
 		for(i = 0; i < server[id].users; i++) {
 			aid = RFIFOL(fd,6+i*8);
 			cid = RFIFOL(fd,6+i*8+4);
-			character = idb_ensure(online_char_db, aid, create_online_char_data);
+			character = idb_ensure(online_char_db, aid, char_create_online_data);
 			if( character->server > -1 && character->server != id )
 			{
 				ShowNotice("Set map user: Character (%d:%d) marked on map server %d, but map server %d claims to have (%d:%d) online!\n",
@@ -279,7 +274,7 @@ int char_parsemap_regmapuser(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_reqsavechar(int fd, int id){
+int chmapif_parse_reqsavechar(int fd, int id){
 	if (RFIFOREST(fd) < 4 || RFIFOREST(fd) < RFIFOW(fd,2))
 			return 0;
 	{
@@ -300,15 +295,15 @@ int char_parsemap_reqsavechar(int fd, int id){
 		{
 			struct mmo_charstatus char_dat;
 			memcpy(&char_dat, RFIFOP(fd,13), sizeof(struct mmo_charstatus));
-			mmo_char_tosql(cid, &char_dat);
+			char_mmo_char_tosql(cid, &char_dat);
 		} else {	//This may be valid on char-server reconnection, when re-sending characters that already logged off.
 			ShowError("parse_from_map (save-char): Received data for non-existant/offline character (%d:%d).\n", aid, cid);
-			set_char_online(id, cid, aid);
+			char_set_char_online(id, cid, aid);
 		}
 
 		if (RFIFOB(fd,12))
 		{	//Flag, set character offline after saving. [Skotlex]
-			set_char_offline(cid, aid);
+			char_set_char_offline(cid, aid);
 			WFIFOHEAD(fd,10);
 			WFIFOW(fd,0) = 0x2b21; //Save ack only needed on final save.
 			WFIFOL(fd,2) = aid;
@@ -320,7 +315,7 @@ int char_parsemap_reqsavechar(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_authok(int fd, int id){
+int chmapif_parse_authok(int fd, int id){
 	if( RFIFOREST(fd) < 19 )
 		return 0;
 	else{
@@ -355,7 +350,7 @@ int char_parsemap_authok(int fd, int id){
 			idb_put(auth_db, account_id, node);
 
 			//Set char to "@ char select" in online db [Kevin]
-			set_char_charselect(account_id);
+			char_set_charselect(account_id);
 			{
 				struct online_char_data* character = (struct online_char_data*)idb_get(online_char_db, account_id);
 				if( character != NULL ){
@@ -374,7 +369,7 @@ int char_parsemap_authok(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_reqchangemapserv(int fd, int id){
+int chmapif_parse_reqchangemapserv(int fd, int id){
 	if (RFIFOREST(fd) < 39)
 		return 0;
 	{
@@ -383,13 +378,13 @@ int char_parsemap_reqchangemapserv(int fd, int id){
 		struct mmo_charstatus char_dat;
 		DBMap* char_db_ = char_get_chardb();
 
-		map_id = search_mapserver(RFIFOW(fd,18), ntohl(RFIFOL(fd,24)), ntohs(RFIFOW(fd,28))); //Locate mapserver by ip and port.
+		map_id = char_search_mapserver(RFIFOW(fd,18), ntohl(RFIFOL(fd,24)), ntohs(RFIFOW(fd,28))); //Locate mapserver by ip and port.
 		if (map_id >= 0)
 			map_fd = server[map_id].fd;
 		//Char should just had been saved before this packet, so this should be safe. [Skotlex]
 		char_data = (struct mmo_charstatus*)uidb_get(char_db_,RFIFOL(fd,14));
 		if (char_data == NULL) {	//Really shouldn't happen.
-			mmo_char_fromsql(RFIFOL(fd,14), &char_dat, true);
+			char_mmo_char_fromsql(RFIFOL(fd,14), &char_dat, true);
 			char_data = (struct mmo_charstatus*)uidb_get(char_db_,RFIFOL(fd,14));
 		}
 
@@ -423,7 +418,7 @@ int char_parsemap_reqchangemapserv(int fd, int id){
 			node->changing_mapservers = 1;
 			idb_put(auth_db, aid, node);
 
-			data = idb_ensure(online_char_db, aid, create_online_char_data);
+			data = idb_ensure(online_char_db, aid, char_create_online_data);
 			data->char_id = char_data->char_id;
 			data->server = map_id; //Update server where char is.
 
@@ -444,7 +439,7 @@ int char_parsemap_reqchangemapserv(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_askrmfriend(int fd, int id){
+int chmapif_parse_askrmfriend(int fd, int id){
 	if (RFIFOREST(fd) < 10)
 		return 0;
 	{
@@ -461,7 +456,7 @@ int char_parsemap_askrmfriend(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_reqcharname(int fd, int id){
+int chmapif_parse_reqcharname(int fd, int id){
 	if (RFIFOREST(fd) < 6)
 		return 0;
 
@@ -478,7 +473,7 @@ int char_parsemap_reqcharname(int fd, int id){
 /*
  * Forward email update request to loginserv
  */
-int char_parsemap_reqnewemail(int fd, int id){
+int chmapif_parse_reqnewemail(int fd, int id){
 	if (RFIFOREST(fd) < 86)
 		return 0;
 	if (login_fd > 0) { // don't send request if no login-server
@@ -491,7 +486,7 @@ int char_parsemap_reqnewemail(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_fwlog_changestatus(int fd, int id){
+int chmapif_parse_fwlog_changestatus(int fd, int id){
 	if (RFIFOREST(fd) < 44)
 		return 0;
 	{
@@ -595,7 +590,7 @@ int char_parsemap_fwlog_changestatus(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_updfamelist(int fd, int id){
+int chmapif_parse_updfamelist(int fd, int id){
 	if (RFIFOREST(fd) < 11)
 		return 0;
 	{
@@ -623,7 +618,7 @@ int char_parsemap_updfamelist(int fd, int id){
 		else if( fame_pos == player_pos )
 		{// same position
 			list[player_pos].fame = fame;
-			char_update_fame_list(type, player_pos, fame);
+			chmapif_update_fame_list(type, player_pos, fame);
 		}
 		else
 		{// move in the list
@@ -641,7 +636,7 @@ int char_parsemap_updfamelist(int fd, int id){
 				ARR_MOVE(player_pos, fame_pos, list, struct fame_list);
 				list[fame_pos].fame = fame;
 			}
-			char_send_fame_list(-1);
+			chmapif_send_fame_list(-1);
 		}
 
 		RFIFOSKIP(fd,11);
@@ -649,22 +644,23 @@ int char_parsemap_updfamelist(int fd, int id){
 	return 1;
 }
 
-void char_send_ackdivorce(int partner_id1, int partner_id2){
+void chmapif_send_ackdivorce(int partner_id1, int partner_id2){
 	unsigned char buf[64]; //buf 10 ?
 	WBUFW(buf,0) = 0x2b12;
 	WBUFL(buf,2) = partner_id1;
 	WBUFL(buf,6) = partner_id2;
-	mapif_sendall(buf,10);
+	chmapif_sendall(buf,10);
 }
 
-int char_parsemap_reqdivorce(int fd, int id){
+int chmapif_parse_reqdivorce(int fd, int id){
 	if( RFIFOREST(fd) < 10 )
 		return 0;
-	divorce_char_sql(RFIFOL(fd,2), RFIFOL(fd,6));
+	char_divorce_char_sql(RFIFOL(fd,2), RFIFOL(fd,6));
 	RFIFOSKIP(fd,10);
 	return 1;
 }
-int char_parsemap_updmapinfo(int fd, int id){
+
+int chmapif_parse_updmapinfo(int fd, int id){
 	if( RFIFOREST(fd) < 14 )
 		return 0;
 	{
@@ -677,38 +673,39 @@ int char_parsemap_updmapinfo(int fd, int id){
 	}
 	return 1;
 }
-int char_parsemap_setcharoffline(int fd, int id){
+
+int chmapif_parse_setcharoffline(int fd, int id){
 	if (RFIFOREST(fd) < 6)
 		return 0;
-	set_char_offline(RFIFOL(fd,2),RFIFOL(fd,6));
+	char_set_char_offline(RFIFOL(fd,2),RFIFOL(fd,6));
 	RFIFOSKIP(fd,10);
 	return 1;
 }
 
-int char_parsemap_setalloffline(int fd, int id){
-	set_all_offline(id);
+int chmapif_parse_setalloffline(int fd, int id){
+	char_set_all_offline(id);
 	RFIFOSKIP(fd,2);
 	return 1;
 }
 
-int char_parsemap_setcharonline(int fd, int id){
+int chmapif_parse_setcharonline(int fd, int id){
 	if (RFIFOREST(fd) < 10)
 		return 0;
-	set_char_online(id, RFIFOL(fd,2),RFIFOL(fd,6));
+	char_set_char_online(id, RFIFOL(fd,2),RFIFOL(fd,6));
 	RFIFOSKIP(fd,10);
 	return 1;
 }
 
-int char_parsemap_reqfamelist(int fd, int id){
+int chmapif_parse_reqfamelist(int fd, int id){
 	if (RFIFOREST(fd) < 2)
 		return 0;
 	char_read_fame_list();
-	char_send_fame_list(-1);
+	chmapif_send_fame_list(-1);
 	RFIFOSKIP(fd,2);
 	return 1;
 }
 
-int char_parsemap_save_scdata(int fd, int id){
+int chmapif_parse_save_scdata(int fd, int id){
 	if (RFIFOREST(fd) < 4 || RFIFOREST(fd) < RFIFOW(fd,2))
 		return 0;
 	{
@@ -745,7 +742,7 @@ int char_parsemap_save_scdata(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_keepalive(int fd, int id){
+int chmapif_parse_keepalive(int fd, int id){
 	WFIFOHEAD(fd,2);
 	WFIFOW(fd,0) = 0x2b24;
 	WFIFOSET(fd,2);
@@ -753,7 +750,7 @@ int char_parsemap_keepalive(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_reqauth(int fd, int id){
+int chmapif_parse_reqauth(int fd, int id){
 	if (RFIFOREST(fd) < 19)
 		return 0;
 
@@ -780,7 +777,7 @@ int char_parsemap_reqauth(int fd, int id){
 		cd = (struct mmo_charstatus*)uidb_get(char_db_,char_id);
 		if( cd == NULL )
 		{	//Really shouldn't happen.
-			mmo_char_fromsql(char_id, &char_dat, true);
+			char_mmo_char_fromsql(char_id, &char_dat, true);
 			cd = (struct mmo_charstatus*)uidb_get(char_db_,char_id);
 		}
 		if( runflag == CHARSERVER_ST_RUNNING &&
@@ -808,7 +805,7 @@ int char_parsemap_reqauth(int fd, int id){
 
 			// only use the auth once and mark user online
 			idb_remove(auth_db, account_id);
-			set_char_online(id, char_id, account_id);
+			char_set_char_online(id, char_id, account_id);
 		}
 		else
 		{// auth failed
@@ -825,7 +822,7 @@ int char_parsemap_reqauth(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_updmapip(int fd, int id){
+int chmapif_parse_updmapip(int fd, int id){
 	if (RFIFOREST(fd) < 6) return 0;
 	server[id].ip = ntohl(RFIFOL(fd, 2));
 	ShowInfo("Updated IP address of map-server #%d to %d.%d.%d.%d.\n", id, CONVIP(server[id].ip));
@@ -833,7 +830,7 @@ int char_parsemap_updmapip(int fd, int id){
 	return 1;
 }
 
-int char_parsemap_fw_configstats(int fd, int id){
+int chmapif_parse_fw_configstats(int fd, int id){
 	if( RFIFOREST(fd) < RFIFOW(fd,4) )
 		return 0;/* packet wasn't fully received yet (still fragmented) */
 	else {
@@ -856,7 +853,7 @@ int char_parsemap_fw_configstats(int fd, int id){
 	return 1;
 }
 
-int parse_frommap(int fd){
+int chmapif_parse(int fd){
 	int id; //mapserv id
 	ARR_FIND( 0, ARRAYLENGTH(server), id, server[id].fd == fd );
 	if( id == ARRAYLENGTH(server) )
@@ -869,57 +866,57 @@ int parse_frommap(int fd){
 	{
 		do_close(fd);
 		server[id].fd = -1;
-		mapif_on_disconnect(id);
+		chmapif_on_disconnect(id);
 		return 0;
 	}
 
 	while(RFIFOREST(fd) >= 2){
 		switch(RFIFOW(fd,0)){
 		// Receiving map names list from the map-server
-		case 0x2afa: char_parsemap_getmapname(fd,id); break;
+		case 0x2afa: chmapif_parse_getmapname(fd,id); break;
 		//Packet command is now used for sc_data request. [Skotlex]
-		case 0x2afc: char_parsemap_askscdata(fd,id); break;
+		case 0x2afc: chmapif_parse_askscdata(fd,id); break;
 		//MAP user count
-		case 0x2afe: char_parsemap_getusercount(fd,id); break; //get nb user
-		case 0x2aff: char_parsemap_regmapuser(fd,id); break; //register users
+		case 0x2afe: chmapif_parse_getusercount(fd,id); break; //get nb user
+		case 0x2aff: chmapif_parse_regmapuser(fd,id); break; //register users
 		// Receive character data from map-server for saving
-		case 0x2b01: char_parsemap_reqsavechar(fd,id); break;
+		case 0x2b01: chmapif_parse_reqsavechar(fd,id); break;
 		// req char selection;
-		case 0x2b02: char_parsemap_authok(fd,id); break;
+		case 0x2b02: chmapif_parse_authok(fd,id); break;
 		// request "change map server"
-		case 0x2b05: char_parsemap_reqchangemapserv(fd,id); break;
+		case 0x2b05: chmapif_parse_reqchangemapserv(fd,id); break;
 		// Remove RFIFOL(fd,6) (friend_id) from RFIFOL(fd,2) (char_id) friend list [Ind]
-		case 0x2b07: char_parsemap_askrmfriend(fd,id); break;
+		case 0x2b07: chmapif_parse_askrmfriend(fd,id); break;
 		// char name request
-		case 0x2b08: char_parsemap_reqcharname(fd,id); break;
+		case 0x2b08: chmapif_parse_reqcharname(fd,id); break;
 		// Map server send information to change an email of an account -> login-server
-		case 0x2b0c: char_parsemap_reqnewemail(fd,id); break;
+		case 0x2b0c: chmapif_parse_reqnewemail(fd,id); break;
 		// Request from map-server to change an account's status (will just be forwarded to login server)
-		case 0x2b0e: char_parsemap_fwlog_changestatus(fd,id); break;
+		case 0x2b0e: chmapif_parse_fwlog_changestatus(fd,id); break;
 		// Update and send fame ranking list
-		case 0x2b10: char_parsemap_updfamelist(fd,id); break;
+		case 0x2b10: chmapif_parse_updfamelist(fd,id); break;
 		// Divorce chars
-		case 0x2b11: char_parsemap_reqdivorce(fd,id); break;
+		case 0x2b11: chmapif_parse_reqdivorce(fd,id); break;
 		// Receive rates [Wizputer]
-		case 0x2b16: char_parsemap_updmapinfo(fd,id); break;
+		case 0x2b16: chmapif_parse_updmapinfo(fd,id); break;
 		// Character disconnected set online 0 [Wizputer]
-		case 0x2b17: char_parsemap_setcharoffline(fd,id); break;
+		case 0x2b17: chmapif_parse_setcharoffline(fd,id); break;
 		// Reset all chars to offline [Wizputer]
-		case 0x2b18: char_parsemap_setalloffline(fd,id); break;
+		case 0x2b18: chmapif_parse_setalloffline(fd,id); break;
 		// Character set online [Wizputer]
-		case 0x2b19: char_parsemap_setcharonline(fd,id); break;
+		case 0x2b19: chmapif_parse_setcharonline(fd,id); break;
 		// Build and send fame ranking lists [DracoRPG]
-		case 0x2b1a: char_parsemap_reqfamelist(fd,id); break;
+		case 0x2b1a: chmapif_parse_reqfamelist(fd,id); break;
 		//Request to save status change data. [Skotlex]
-		case 0x2b1c: char_parsemap_save_scdata(fd,id); break;
+		case 0x2b1c: chmapif_parse_save_scdata(fd,id); break;
 		// map-server alive packet
-		case 0x2b23: char_parsemap_keepalive(fd,id); break;
+		case 0x2b23: chmapif_parse_keepalive(fd,id); break;
 		// auth request from map-server
-		case 0x2b26: char_parsemap_reqauth(fd,id); break;
+		case 0x2b26: chmapif_parse_reqauth(fd,id); break;
 		// ip address update
-		case 0x2736: char_parsemap_updmapip(fd,id); break;
+		case 0x2736: chmapif_parse_updmapip(fd,id); break;
 		// transmit emu usage for anom stats
-		case 0x3008: char_parsemap_fw_configstats(fd,id); break;
+		case 0x3008: chmapif_parse_fw_configstats(fd,id); break;
 		default:
 		{
 			// inter server - packet
@@ -939,33 +936,32 @@ int parse_frommap(int fd){
 
 
 // Initialization process (currently only initialization inter_mapif)
-int char_mapif_init(int fd){
+int chmapif_init(int fd){
 	return inter_mapif_init(fd);
 }
+
 /// Initializes a server structure.
-void mapif_server_init(int id)
-{
+void chmapif_server_init(int id) {
 	memset(&server[id], 0, sizeof(server[id]));
 	server[id].fd = -1;
 }
+
 /// Destroys a server structure.
-void mapif_server_destroy(int id){
-	if( server[id].fd == -1 )
-	{
+void chmapif_server_destroy(int id){
+	if( server[id].fd == -1 ){
 		do_close(server[id].fd);
 		server[id].fd = -1;
 	}
 }
 
-void do_init_mapif(void)
-{
+void do_init_chmapif(void){
 	int i;
 	for( i = 0; i < ARRAYLENGTH(server); ++i )
-		mapif_server_init(i);
+		chmapif_server_init(i);
 }
 
 /// Resets all the data related to a server.
-void mapif_server_reset(int id){
+void chmapif_server_reset(int id){
 	int i,j;
 	unsigned char buf[16384];
 	int fd = server[id].fd;
@@ -981,27 +977,26 @@ void mapif_server_reset(int id){
 			WBUFW(buf,10+(j++)*4) = server[id].map[i];
 	if (j > 0) {
 		WBUFW(buf,2) = j * 4 + 10;
-		mapif_sendallwos(fd, buf, WBUFW(buf,2));
+		chmapif_sendallwos(fd, buf, WBUFW(buf,2));
 	}
 	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `index`='%d'", schema_config.ragsrvinfo_db, server[id].fd) )
 		Sql_ShowDebug(sql_handle);
 	online_char_db->foreach(online_char_db,char_db_setoffline,id); //Tag relevant chars as 'in disconnected' server.
-	mapif_server_destroy(id);
-	mapif_server_init(id);
+	chmapif_server_destroy(id);
+	chmapif_server_init(id);
 }
 
 
 /// Called when the connection to a Map Server is disconnected.
-void mapif_on_disconnect(int id){
+void chmapif_on_disconnect(int id){
 	ShowStatus("Map-server #%d has disconnected.\n", id);
-	mapif_server_reset(id);
+	chmapif_server_reset(id);
 }
 
 
 
-void do_final_mapif(void)
-{
+void do_final_chmapif(void){
 	int i;
 	for( i = 0; i < ARRAYLENGTH(server); ++i )
-		mapif_server_destroy(i);
+		chmapif_server_destroy(i);
 }

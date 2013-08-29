@@ -3254,7 +3254,7 @@ static int char_ip_set = 0;
 /*==========================================
  * Console Command Parser [Wizputer]
  *------------------------------------------*/
-int parse_console(const char* buf){
+int chcnslif_parse(const char* buf){
 	char type[64];
 	char command[64];
 	char map[64];

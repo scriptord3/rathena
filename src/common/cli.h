@@ -36,7 +36,7 @@ void display_versionscreen(bool do_exit);
 bool opt_has_next_value(const char* option, int i, int argc);
 int cli_get_options(int argc, char ** argv);
 int parse_console_timer(int tid, unsigned int tick, int id, intptr_t data);
-extern int parse_console(const char* buf); //particular for each serv
+extern int chcnslif_parse(const char* buf); //particular for each serv
 
 #ifdef	__cplusplus
 }

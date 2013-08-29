@@ -12,20 +12,20 @@
 extern "C" {
 #endif
 
-int parse_frommap(int fd);
+int chmapif_parse(int fd);
 
-int char_mapif_init(int fd);
-void do_init_mapif(void);
-void mapif_on_disconnect(int id);
-void mapif_server_reset(int id);
-void do_final_mapif(void);
+int chmapif_init(int fd);
+void do_init_chmapif(void);
+void chmapif_on_disconnect(int id);
+void chmapif_server_reset(int id);
+void do_final_chmapif(void);
 
-int mapif_sendall(unsigned char *buf,unsigned int len);
-int mapif_sendallwos(int fd,unsigned char *buf,unsigned int len);
-int mapif_send(int fd,unsigned char *buf,unsigned int len);
+int chmapif_sendall(unsigned char *buf,unsigned int len);
+int chmapif_sendallwos(int fd,unsigned char *buf,unsigned int len);
+int chmapif_send(int fd,unsigned char *buf,unsigned int len);
 
-void char_sendall_playercount(int users);
-void char_send_ackdivorce(int partner_id1, int partner_id2);
+void chmapif_sendall_playercount(int users);
+void chmapif_send_ackdivorce(int partner_id1, int partner_id2);
 
 
 

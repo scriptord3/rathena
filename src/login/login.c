@@ -384,7 +384,7 @@ bool check_password(const char* md5key, int passwdenc, const char* passwd, const
 //--------------------------------------------
 // Test to know if an IP come from LAN or WAN.
 //--------------------------------------------
-int lan_subnetcheck(uint32 ip)
+int char_lan_subnetcheck(uint32 ip)
 {
 	int i;
 	ARR_FIND( 0, subnet_count, i, (subnet[i].char_ip & subnet[i].mask) == (ip & subnet[i].mask) );

@@ -120,7 +120,7 @@ static void login_auth_ok(struct login_session_data* sd)
 		if( !session_isValid(server[i].fd) )
 			continue;
 
-		subnet_char_ip = lan_subnetcheck(ip); // Advanced subnet check [LuzZza]
+		subnet_char_ip = char_lan_subnetcheck(ip); // Advanced subnet check [LuzZza]
 		WFIFOL(fd,47+n*32) = htonl((subnet_char_ip) ? subnet_char_ip : server[i].ip);
 		WFIFOW(fd,47+n*32+4) = ntows(htons(server[i].port)); // [!] LE byte order here [!]
 		memcpy(WFIFOP(fd,47+n*32+6), server[i].name, 20);
