@@ -32,7 +32,7 @@ enum {
 
 extern char SERVER_TYPE;
 
-extern int chcnslif_parse(const char* buf);
+extern int cnslif_parse(const char* buf);
 const char *get_svn_revision(void);
 const char *get_git_hash(void);
 extern int do_init(int,char**);

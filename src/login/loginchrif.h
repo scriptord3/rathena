@@ -1,8 +1,10 @@
-/*
- * File:   loginchrif.h
- * Author: lighta
- *
- * Created on June 15, 2013, 3:57 AM
+/**
+ * @file loginchrif.h
+ * Module purpose is to handle incoming and outgoing request with char-serv
+ * Licensed under GNU GPL
+ *  For more information, see LICENCE in the main folder
+ * @author Athena Dev Teams originally in login.c
+ * @author rA Dev team
  */
 
 #ifndef LOGINCHRIF_H
@@ -12,13 +14,13 @@
 extern "C" {
 #endif
 
-int parse_fromchar(int fd);
+int logchrif_parse(int fd);
+
+int logchrif_sendallwos(int sfd, uint8* buf, size_t len);
 
 void do_init_loginchrif(void);
 void do_shutdown_loginchrif(void);
 void do_final_loginchrif(void);
-
-int charif_sendallwos(int sfd, uint8* buf, size_t len);
 
 #ifdef	__cplusplus
 }

@@ -33,7 +33,7 @@ void display_helpscreen(bool do_exit)
 }
 
 // Console Command Parser [Wizputer]
-int chcnslif_parse(const char* buf)
+int cnslif_parse(const char* buf)
 {
 	char type[64];
 	char command[64];

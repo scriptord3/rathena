@@ -1918,10 +1918,12 @@ int char_search_mapserver(unsigned short map, uint32 ip, uint16 port){
 	return -1;
 }
 
-//--------------------------------------------
-// Test to know if an IP come from LAN or WAN.
-//--------------------------------------------
-int char_lan_subnetcheck(uint32 ip){
+/**
+ * Test to know if an IP come from LAN or WAN.
+ * @param ip: ip to check if in auth network
+ * @return 0 if from wan, or subnet_map_ip if lan
+ **/
+int lan_subnetcheck(uint32 ip){
 	int i;
 	ARR_FIND( 0, subnet_count, i, (subnet[i].char_ip & subnet[i].mask) == (ip & subnet[i].mask) );
 	if( i < subnet_count ) {
@@ -2035,7 +2037,7 @@ static int char_online_data_cleanup(int tid, unsigned int tick, int id, intptr_t
 //----------------------------------
 int char_lan_config_read(const char *lancfgName) {
 	FILE *fp;
-	int line_num = 0;
+	int line_num = 0, s_subnet=ARRAYLENGTH(subnet);
 	char line[1024], w1[64], w2[64], w3[64], w4[64];
 
 	if((fp = fopen(lancfgName, "r")) == NULL) {
@@ -2059,18 +2061,19 @@ int char_lan_config_read(const char *lancfgName) {
 		remove_control_chars(w3);
 		remove_control_chars(w4);
 
-		if( strcmpi(w1, "subnet") == 0 )
-		{
+		if( strcmpi(w1, "subnet") == 0 ){
+			if(subnet_count>=s_subnet) { //we skipping instead break in case we want to add other conf in that file
+				ShowError("%s: Has too many subnet defined skiping line=%d\n", lancfgName, line_num);
+				continue;
+			}
 			subnet[subnet_count].mask = str2ip(w2);
 			subnet[subnet_count].char_ip = str2ip(w3);
 			subnet[subnet_count].map_ip = str2ip(w4);
-
 			if( (subnet[subnet_count].char_ip & subnet[subnet_count].mask) != (subnet[subnet_count].map_ip & subnet[subnet_count].mask) )
 			{
 				ShowError("%s: Configuration Error: The char server (%s) and map server (%s) belong to different subnetworks!\n", lancfgName, w3, w4);
 				continue;
 			}
-
 			subnet_count++;
 		}
 	}

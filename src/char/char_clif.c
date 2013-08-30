@@ -785,7 +785,7 @@ int chclif_parse_charselect(int fd, struct char_session_data* sd,uint32 ipl){
 		WFIFOW(fd,0) = 0x71;
 		WFIFOL(fd,2) = cd->char_id;
 		mapindex_getmapname_ext(mapindex_id2name(cd->last_point.map), (char*)WFIFOP(fd,6));
-		subnet_map_ip = char_lan_subnetcheck(ipl); // Advanced subnet check [LuzZza]
+		subnet_map_ip = lan_subnetcheck(ipl); // Advanced subnet check [LuzZza]
 		WFIFOL(fd,22) = htonl((subnet_map_ip) ? subnet_map_ip : server[i].ip);
 		WFIFOW(fd,26) = ntows(htons(server[i].port)); // [!] LE byte order here [!]
 		WFIFOSET(fd,28);

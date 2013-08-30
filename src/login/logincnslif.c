@@ -1,3 +1,11 @@
+/**
+ * @file logincnslif.c
+ * Module purpose is to handle incoming and outgoing request with console
+ * Licensed under GNU GPL
+ *  For more information, see LICENCE in the main folder
+ * @author Athena Dev Teams originally in login.c
+ * @author rA Dev team
+ */
 
 #include "../common/mmo.h" //cbasetype + NAME_LENGTH
 #include "../common/showmsg.h" //show notice
@@ -13,10 +21,10 @@
 #include <string.h>
 
 /*======================================================
- * Login-Server help starting option info
+ * Login-Server console  help starting option info
+ * Do not rename function used as extern
  *------------------------------------------------------*/
-void display_helpscreen(bool do_exit)
-{
+void display_helpscreen(bool do_exit) {
 	ShowInfo("Usage: %s [options]\n", SERVER_NAME);
 	ShowInfo("\n");
 	ShowInfo("Options:\n");
@@ -30,14 +38,12 @@ void display_helpscreen(bool do_exit)
 		exit(EXIT_SUCCESS);
 }
 
-
 /*
  * Read the option specify in command line
  * and assign the confs used by the different server
  * exit on failure or return true
  */
-int cnsl_get_options(int argc, char ** argv)
-{
+int logcnsl_get_options(int argc, char ** argv) {
 	int i = 0;
 	for (i = 1; i < argc; i++) {
 		const char* arg = argv[i];
@@ -90,8 +96,9 @@ int cnsl_get_options(int argc, char ** argv)
 
 //-----------------------
 // Console Command Parser [Wizputer]
+// note common name for all serv do not rename (extern in cli)
 //-----------------------
-int chcnslif_parse(const char* buf){
+int cnslif_parse(const char* buf){
 	char type[64];
 	char command[64];
 	int n=0;
@@ -126,7 +133,7 @@ int chcnslif_parse(const char* buf){
 				MD5_String(password,md5password);
 				md5 = 1;
 			}
-			if( mmo_auth_new(username,(md5?md5password:password), TOUPPER(sex), "0.0.0.0") != -1 ){
+			if( login_mmo_auth_new(username,(md5?md5password:password), TOUPPER(sex), "0.0.0.0") != -1 ){
 				ShowError("Console: Account creation failed.\n");
 				return 0;
 			}
@@ -146,9 +153,20 @@ int chcnslif_parse(const char* buf){
 	return 0;
 }
 
+/*
+ * Initialise the module.
+ * Launched at login-serv start, create db or other long scope variable here
+ */
 void do_init_logincnslif(void){
 	if( login_config.console ) {
 		add_timer_func_list(parse_console_timer, "parse_console_timer");
 		add_timer_interval(gettick()+1000, parse_console_timer, 0, 0, 1000); //start in 1s each 1sec
 	}
+}
+
+/*
+ * Handler to cleanup module called when logins-serv stop
+ */
+void do_final_logincnslif(void){
+	return 0;
 }

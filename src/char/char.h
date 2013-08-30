@@ -198,7 +198,7 @@ struct fame_list taekwon_fame_list[MAX_FAME_LIST];
 #define MAX_CHAR_BUF 144 //Max size (for WFIFOHEAD calls)
 
 int char_search_mapserver(unsigned short map, uint32 ip, uint16 port);
-int char_lan_subnetcheck(uint32 ip);
+int lan_subnetcheck(uint32 ip);
 
 int char_count_users(void);
 DBData char_create_online_data(DBKey key, va_list args);

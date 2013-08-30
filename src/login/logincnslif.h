@@ -1,8 +1,10 @@
-/*
- * File:   consoleif.h
- * Author: lighta
- *
- * Created on June 15, 2013, 3:58 AM
+/**
+ * @file logincnslif.h
+ * Module purpose is to handle incoming and outgoing request with console
+ * Licensed under GNU GPL
+ *  For more information, see LICENCE in the main folder
+ * @author Athena Dev Teams originally in login.c
+ * @author rA Dev team
  */
 
 #ifndef CONSOLEIF_H
@@ -12,12 +14,13 @@
 extern "C" {
 #endif
 
-int chcnslif_parse(const char* buf);
+int cnslif_parse(const char* buf);
+
+int logcnsl_get_options(int argc, char ** argv);
+void display_helpscreen(bool do_exit);
 
 void do_init_logincnslif(void);
-
-int cnsl_get_options(int argc, char ** argv);
-void display_helpscreen(bool do_exit);
+void do_final_logincnslif(void);
 
 #ifdef	__cplusplus
 }

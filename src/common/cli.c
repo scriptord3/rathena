@@ -176,7 +176,7 @@ int parse_console_timer(int tid, unsigned int tick, int id, intptr_t data) {
 		if(fgets(buf, MAX_CONSOLE_IN, stdin)==NULL)
 			return -1;
 		else if(strlen(buf)>MIN_CONSOLE_IN)
-			chcnslif_parse(buf);
+			cnslif_parse(buf);
 	}
 	return 0;
 }

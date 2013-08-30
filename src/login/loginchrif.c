@@ -1,5 +1,11 @@
-// Copyright (c) rAthena Dev Teams - Licensed under GNU GPL
-// For more information, see LICENCE in the main folder
+/**
+ * @file loginchrif.c
+ * Module purpose is to handle incoming and outgoing request with char-serv
+ * Licensed under GNU GPL
+ *  For more information, see LICENCE in the main folder
+ * @author Athena Dev Teams originally in login.c
+ * @author rA Dev team
+ */
 
 #include "../common/timer.h" //difftick
 #include "../common/strlib.h" //safeprint
@@ -20,7 +26,7 @@
 //--------------------------------------------------------------------
 // Packet send to all char-servers, except one (wos: without our self)
 //--------------------------------------------------------------------
-int charif_sendallwos(int sfd, uint8* buf, size_t len)
+int logchrif_sendallwos(int sfd, uint8* buf, size_t len)
 {
 	int i, c;
 
@@ -41,7 +47,7 @@ int charif_sendallwos(int sfd, uint8* buf, size_t len)
 
 
 /// Initializes a server structure.
-void chrif_server_init(int id)
+void logchrif_server_init(int id)
 {
 	memset(&server[id], 0, sizeof(server[id]));
 	server[id].fd = -1;
@@ -49,7 +55,7 @@ void chrif_server_init(int id)
 
 
 /// Destroys a server structure.
-void chrif_server_destroy(int id)
+void logchrif_server_destroy(int id)
 {
 	if( server[id].fd != -1 )
 	{
@@ -60,33 +66,33 @@ void chrif_server_destroy(int id)
 
 
 /// Resets all the data related to a server.
-void chrif_server_reset(int id)
+void logchrif_server_reset(int id)
 {
-	online_db->foreach(online_db, online_db_setoffline, id); //Set all chars from this char server to offline.
-	chrif_server_destroy(id);
-	chrif_server_init(id);
+	online_db->foreach(online_db, login_online_db_setoffline, id); //Set all chars from this char server to offline.
+	logchrif_server_destroy(id);
+	logchrif_server_init(id);
 }
 
 /// Called when the connection to Char Server is disconnected.
-void chrif_on_disconnect(int id)
+void logchrif_on_disconnect(int id)
 {
 	ShowStatus("Char-server '%s' has disconnected.\n", server[id].name);
-	chrif_server_reset(id);
+	logchrif_server_reset(id);
 }
 
 //-----------------------------------------------------
 // periodic ip address synchronization
 //-----------------------------------------------------
-static int sync_ip_addresses(int tid, unsigned int tick, int id, intptr_t data)
+static int logchrif_sync_ip_addresses(int tid, unsigned int tick, int id, intptr_t data)
 {
 	uint8 buf[2];
 	ShowInfo("IP Sync in progress...\n");
 	WBUFW(buf,0) = 0x2735;
-	charif_sendallwos(-1, buf, 2);
+	logchrif_sendallwos(-1, buf, 2);
 	return 0;
 }
 
-int login_parsechar_reqauth(int fd, int id,char* ip){
+int logchrif_parse_reqauth(int fd, int id,char* ip){
 	if( RFIFOREST(fd) < 23 )
 		return 0;
 	else{
@@ -142,7 +148,7 @@ int login_parsechar_reqauth(int fd, int id,char* ip){
 	return 1;
 }
 
-int login_parsechar_ackusercount(int fd, int id){
+int logchrif_parse_ackusercount(int fd, int id){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
 	else{
@@ -158,7 +164,7 @@ int login_parsechar_ackusercount(int fd, int id){
 	return 1;
 }
 
-int login_parsechar_updmail(int fd, int id, char* ip){
+int logchrif_parse_updmail(int fd, int id, char* ip){
 	if (RFIFOREST(fd) < 46)
 		return 0;
 	else{
@@ -184,7 +190,7 @@ int login_parsechar_updmail(int fd, int id, char* ip){
 	return 1;
 }
 
-int login_parsechar_reqaccdata(int fd, int id, char *ip){
+int logchrif_parse_reqaccdata(int fd, int id, char *ip){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
 	else{
@@ -228,7 +234,7 @@ int login_parsechar_reqaccdata(int fd, int id, char *ip){
 	return 1;
 }
 
-int login_parsechar_keepalive(int fd){
+int logchrif_parse_keepalive(int fd){
 	RFIFOSKIP(fd,2);
 	WFIFOHEAD(fd,2);
 	WFIFOW(fd,0) = 0x2718;
@@ -237,7 +243,7 @@ int login_parsechar_keepalive(int fd){
 }
 
 // 0x2722 <account_id>.L <actual_e-mail>.40B <new_e-mail>.40B
-int login_parsechar_reqchangemail(int fd, int id, char* ip){
+int logchrif_parse_reqchangemail(int fd, int id, char* ip){
 	if (RFIFOREST(fd) < 86)
 		return 0;
 	else{
@@ -271,7 +277,7 @@ int login_parsechar_reqchangemail(int fd, int id, char* ip){
 	return 1;
 }
 
-int login_parsechar_requpdaccstate(int fd, int id, char* ip){
+int logchrif_parse_requpdaccstate(int fd, int id, char* ip){
 	if (RFIFOREST(fd) < 10)
 		return 0;
 	else{
@@ -300,14 +306,14 @@ int login_parsechar_requpdaccstate(int fd, int id, char* ip){
 				WBUFL(buf,2) = account_id;
 				WBUFB(buf,6) = 0; // 0: change of state, 1: ban
 				WBUFL(buf,7) = state; // status or final date of a banishment
-				charif_sendallwos(-1, buf, 11);
+				logchrif_sendallwos(-1, buf, 11);
 			}
 		}
 	}
 	return 1;
 }
 
-int login_parsechar_reqbanacc(int fd, int id, char* ip){
+int logchrif_parse_reqbanacc(int fd, int id, char* ip){
 	if (RFIFOREST(fd) < 18)
 		return 0;
 	else{
@@ -359,14 +365,14 @@ int login_parsechar_reqbanacc(int fd, int id, char* ip){
 				WBUFL(buf,2) = account_id;
 				WBUFB(buf,6) = 1; // 0: change of status, 1: ban
 				WBUFL(buf,7) = (uint32)timestamp; // status or final date of a banishment
-				charif_sendallwos(-1, buf, 11);
+				logchrif_sendallwos(-1, buf, 11);
 			}
 		}
 	}
 	return 1;
 }
 
-int login_parsechar_reqchgsex(int fd, int id, char* ip){
+int logchrif_parse_reqchgsex(int fd, int id, char* ip){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
 	else{
@@ -394,13 +400,13 @@ int login_parsechar_reqchgsex(int fd, int id, char* ip){
 			WBUFW(buf,0) = 0x2723;
 			WBUFL(buf,2) = account_id;
 			WBUFB(buf,6) = sex_str2num(sex);
-			charif_sendallwos(-1, buf, 7);
+			logchrif_sendallwos(-1, buf, 7);
 		}
 	}
 	return 1;
 }
 
-int login_parsechar_updreg2(int fd, int id, char* ip){
+int logchrif_parse_updreg2(int fd, int id, char* ip){
 	int j;
 	if( RFIFOREST(fd) < 4 || RFIFOREST(fd) < RFIFOW(fd,2) )
 		return 0;
@@ -433,14 +439,14 @@ int login_parsechar_updreg2(int fd, int id, char* ip){
 
 			// Sending information towards the other char-servers.
 			RFIFOW(fd,0) = 0x2729;// reusing read buffer
-			charif_sendallwos(fd, RFIFOP(fd,0), RFIFOW(fd,2));
+			logchrif_sendallwos(fd, RFIFOP(fd,0), RFIFOW(fd,2));
 		}
 		RFIFOSKIP(fd,RFIFOW(fd,2));
 	}
 	return 1;
 }
 
-int login_parsechar_requnbanacc(int fd, int id, char* ip){
+int logchrif_parse_requnbanacc(int fd, int id, char* ip){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
 	else{
@@ -463,37 +469,37 @@ int login_parsechar_requnbanacc(int fd, int id, char* ip){
 	return 1;
 }
 
-int login_parsechar_setacconline(int fd, int id){
+int logchrif_parse_setacconline(int fd, int id){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
-	add_online_user(id, RFIFOL(fd,2));
+	login_add_online_user(id, RFIFOL(fd,2));
 	RFIFOSKIP(fd,6);
 	return 1;
 }
 
-int login_parsechar_setaccoffline(int fd, int id){
+int logchrif_parse_setaccoffline(int fd, int id){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
-	remove_online_user(RFIFOL(fd,2));
+	login_remove_online_user(RFIFOL(fd,2));
 	RFIFOSKIP(fd,6);
 	return 1;
 }
 
-int login_parsechar_updonlinedb(int fd, int id){
+int logchrif_parse_updonlinedb(int fd, int id){
 	if (RFIFOREST(fd) < 4 || RFIFOREST(fd) < RFIFOW(fd,2))
 		return 0;
 	else{
 		struct online_login_data *p;
 		int aid;
 		uint32 i, users;
-		online_db->foreach(online_db, online_db_setoffline, id); //Set all chars from this char-server offline first
+		online_db->foreach(online_db, login_online_db_setoffline, id); //Set all chars from this char-server offline first
 		users = RFIFOW(fd,4);
 		for (i = 0; i < users; i++) {
 			aid = RFIFOL(fd,6+i*4);
-			p = idb_ensure(online_db, aid, create_online_user);
+			p = idb_ensure(online_db, aid, login_create_online_user);
 			p->char_server = id;
 			if (p->waiting_disconnect != INVALID_TIMER){
-				delete_timer(p->waiting_disconnect, waiting_disconnect_timer);
+				delete_timer(p->waiting_disconnect, login_waiting_disconnect_timer);
 				p->waiting_disconnect = INVALID_TIMER;
 			}
 		}
@@ -502,7 +508,7 @@ int login_parsechar_updonlinedb(int fd, int id){
 	return 1;
 }
 
-int login_parsechar_reqacc2reg(int fd, int id){
+int logchrif_parse_reqacc2reg(int fd, int id){
 	int j;
 	if (RFIFOREST(fd) < 10)
 		return 0;
@@ -537,7 +543,7 @@ int login_parsechar_reqacc2reg(int fd, int id){
 	return 1;
 }
 
-int login_parsechar_updcharip(int fd, int id){
+int logchrif_parse_updcharip(int fd, int id){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
 	server[id].ip = ntohl(RFIFOL(fd,2));
@@ -546,14 +552,14 @@ int login_parsechar_updcharip(int fd, int id){
 	return 1;
 }
 
-int login_parsechar_setalloffline(int fd, int id){
+int logchrif_parse_setalloffline(int fd, int id){
 	ShowInfo("Setting accounts from char-server %d offline.\n", id);
-	online_db->foreach(online_db, online_db_setoffline, id);
+	online_db->foreach(online_db, login_online_db_setoffline, id);
 	RFIFOSKIP(fd,2);
 	return 1;
 }
 
-int login_parsechar_updpincode(int fd, int id){
+int logchrif_parse_updpincode(int fd, int id){
 	if( RFIFOREST(fd) < 11 )
 		return 0;
 	else{
@@ -571,7 +577,7 @@ int login_parsechar_updpincode(int fd, int id){
 	return 1;
 }
 
-int login_parsechar_pincode_authfail(int fd, int id){
+int logchrif_parse_pincode_authfail(int fd, int id){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
 	else{
@@ -587,7 +593,7 @@ int login_parsechar_pincode_authfail(int fd, int id){
 
 			login_log( host2ip(acc.last_ip), acc.userid, 100, "PIN Code check failed" );
 		}
-		remove_online_user(acc.account_id);
+		login_remove_online_user(acc.account_id);
 		RFIFOSKIP(fd,6);
 	}
 	return 1;
@@ -596,7 +602,7 @@ int login_parsechar_pincode_authfail(int fd, int id){
 //--------------------------------
 // Packet parsing for char-servers
 //--------------------------------
-int parse_fromchar(int fd){
+int logchrif_parse(int fd){
 	int id;
 	uint32 ipl;
 	char ip[16];
@@ -612,7 +618,7 @@ int parse_fromchar(int fd){
 	if( session[fd]->flag.eof ){
 		do_close(fd);
 		server[id].fd = -1;
-		chrif_on_disconnect(id);
+		logchrif_on_disconnect(id);
 		return 0;
 	}
 
@@ -624,43 +630,43 @@ int parse_fromchar(int fd){
 
 		switch( command ){
 		// request from char-server to authenticate an account
-		case 0x2712: login_parsechar_reqauth(fd, id, ip); break;
+		case 0x2712: logchrif_parse_reqauth(fd, id, ip); break;
 		//update user cout
-		case 0x2714: login_parsechar_ackusercount(fd, id); break;
+		case 0x2714: logchrif_parse_ackusercount(fd, id); break;
 		// request from char server to change e-email from default "a@a.com"
-		case 0x2715: login_parsechar_updmail(fd, id, ip); break;
+		case 0x2715: logchrif_parse_updmail(fd, id, ip); break;
 		// request account data
-		case 0x2716: login_parsechar_reqaccdata(fd, id, ip); break;
+		case 0x2716: logchrif_parse_reqaccdata(fd, id, ip); break;
 		// ping request from charserver
-		case 0x2719: login_parsechar_keepalive(fd); break;
+		case 0x2719: logchrif_parse_keepalive(fd); break;
 		// Map server send information to change an email of an account via char-server
-		case 0x2722: login_parsechar_reqchangemail(fd,id,ip); break;
+		case 0x2722: logchrif_parse_reqchangemail(fd,id,ip); break;
 		// Receiving an account state update request from a map-server (relayed via char-server)
-		case 0x2724: login_parsechar_requpdaccstate(fd,id,ip); break;
+		case 0x2724: logchrif_parse_requpdaccstate(fd,id,ip); break;
 		// Receiving of map-server via char-server a ban request
-		case 0x2725: login_parsechar_reqbanacc(fd,id,ip); break;
+		case 0x2725: logchrif_parse_reqbanacc(fd,id,ip); break;
 		// Change of sex (sex is reversed)
-		case 0x2727: login_parsechar_reqchgsex(fd,id,ip); break;
+		case 0x2727: logchrif_parse_reqchgsex(fd,id,ip); break;
 		// We receive account_reg2 from a char-server, and we send them to other map-servers.
-		case 0x2728: login_parsechar_updreg2(fd,id,ip); break;
+		case 0x2728: logchrif_parse_updreg2(fd,id,ip); break;
 		// Receiving of map-server via char-server an unban request
-		case 0x272a: login_parsechar_requnbanacc(fd,id,ip); break;
+		case 0x272a: logchrif_parse_requnbanacc(fd,id,ip); break;
 		// Set account_id to online [Wizputer]
-		case 0x272b: login_parsechar_setacconline(fd,id); break;
+		case 0x272b: logchrif_parse_setacconline(fd,id); break;
 		// Set account_id to offline [Wizputer]
-		case 0x272c: login_parsechar_setaccoffline(fd,id); break;
+		case 0x272c: logchrif_parse_setaccoffline(fd,id); break;
 		// Receive list of all online accounts. [Skotlex]
-		case 0x272d: login_parsechar_updonlinedb(fd,id); break;
+		case 0x272d: logchrif_parse_updonlinedb(fd,id); break;
 		//Request account_reg2 for a character
-		case 0x272e: login_parsechar_reqacc2reg(fd,id); break;
+		case 0x272e: logchrif_parse_reqacc2reg(fd,id); break;
 		// WAN IP update from char-server
-		case 0x2736: login_parsechar_updcharip(fd,id); break;
+		case 0x2736: logchrif_parse_updcharip(fd,id); break;
 		//Request to set all offline.
-		case 0x2737: login_parsechar_setalloffline(fd,id); break;
+		case 0x2737: logchrif_parse_setalloffline(fd,id); break;
 		//Change PIN Code for a account
-		case 0x2738: login_parsechar_updpincode(fd,id); break;
+		case 0x2738: logchrif_parse_updpincode(fd,id); break;
 		// PIN Code was entered wrong too often
-		case 0x2739: login_parsechar_pincode_authfail(fd,id); break;
+		case 0x2739: logchrif_parse_pincode_authfail(fd,id); break;
 		default:
 			ShowError("parse_fromchar: Unknown packet 0x%x from a char-server! Disconnecting!\n", command);
 			set_eof(fd);
@@ -674,23 +680,23 @@ int parse_fromchar(int fd){
 void do_init_loginchrif(void){
 	int i;
 	for( i = 0; i < ARRAYLENGTH(server); ++i )
-		chrif_server_init(i);
+		logchrif_server_init(i);
 
 	// add timer to detect ip address change and perform update
 	if (login_config.ip_sync_interval) {
-		add_timer_func_list(sync_ip_addresses, "sync_ip_addresses");
-		add_timer_interval(gettick() + login_config.ip_sync_interval, sync_ip_addresses, 0, 0, login_config.ip_sync_interval);
+		add_timer_func_list(logchrif_sync_ip_addresses, "sync_ip_addresses");
+		add_timer_interval(gettick() + login_config.ip_sync_interval, logchrif_sync_ip_addresses, 0, 0, login_config.ip_sync_interval);
 	}
 }
 
 void do_shutdown_loginchrif(void){
 	int id;
 	for( id = 0; id < ARRAYLENGTH(server); ++id )
-		chrif_server_reset(id);
+		logchrif_server_reset(id);
 }
 
 void do_final_loginchrif(void){
 	int i;
 	for( i = 0; i < ARRAYLENGTH(server); ++i )
-		chrif_server_destroy(i);
+		logchrif_server_destroy(i);
 }
