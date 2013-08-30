@@ -169,7 +169,7 @@ struct char_session_data {
 	time_t expiration_time; // # of seconds 1/1/1970 (timestamp): Validity limit of the account (0 = unlimited)
 	int group_id; // permission
 	uint8 char_slots;
-	uint32 version;
+	uint8 version;
 	uint8 clienttype;
 	char new_name[NAME_LENGTH];
 	char birthdate[10+1];  // YYYY-MM-DD

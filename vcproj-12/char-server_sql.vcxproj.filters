@@ -1,6 +1,42 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+   <ClCompile Include="..\3rdparty\mt19937ar\mt19937ar.c">
+      <Filter>3rdparty\mt19937ar</Filter>
+    </ClCompile>
+    <ClCompile Include="..\3rdparty\libconfig\grammar.c">
+      <Filter>3rdparty\libconfig</Filter>
+    </ClCompile>
+    <ClCompile Include="..\3rdparty\libconfig\libconfig.c">
+      <Filter>3rdparty\libconfig</Filter>
+    </ClCompile>
+    <ClCompile Include="..\3rdparty\libconfig\scanctx.c">
+      <Filter>3rdparty\libconfig</Filter>
+    </ClCompile>
+    <ClCompile Include="..\3rdparty\libconfig\scanner.c">
+      <Filter>3rdparty\libconfig</Filter>
+    </ClCompile>
+    <ClCompile Include="..\3rdparty\libconfig\strbuf.c">
+      <Filter>3rdparty\libconfig</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\common\thread.c">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\common\mutex.c">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\common\mempool.c">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\common\raconf.c">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\common\msg_conf.c" />
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\common\cli.c" />
+      <Filter>common</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\common\core.c">
       <Filter>common</Filter>
     </ClCompile>
@@ -76,38 +112,65 @@
     <ClCompile Include="..\src\char\inter.c">
       <Filter>char_sql</Filter>
     </ClCompile>
-    <ClCompile Include="..\3rdparty\mt19937ar\mt19937ar.c">
-      <Filter>3rdparty\mt19937ar</Filter>
+     <ClCompile Include="..\src\char\char_clif.c">
+      <Filter>char_sql</Filter>
     </ClCompile>
-    <ClCompile Include="..\3rdparty\libconfig\grammar.c">
-      <Filter>3rdparty\libconfig</Filter>
+    <ClCompile Include="..\src\char\char_cnslif.c">
+      <Filter>char_sql</Filter>
     </ClCompile>
-    <ClCompile Include="..\3rdparty\libconfig\libconfig.c">
-      <Filter>3rdparty\libconfig</Filter>
+    <ClCompile Include="..\src\char\char_logif.c">
+      <Filter>char_sql</Filter>
     </ClCompile>
-    <ClCompile Include="..\3rdparty\libconfig\scanctx.c">
-      <Filter>3rdparty\libconfig</Filter>
-    </ClCompile>
-    <ClCompile Include="..\3rdparty\libconfig\scanner.c">
-      <Filter>3rdparty\libconfig</Filter>
-    </ClCompile>
-    <ClCompile Include="..\3rdparty\libconfig\strbuf.c">
-      <Filter>3rdparty\libconfig</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\common\thread.c">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\common\mutex.c">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\common\mempool.c">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\common\raconf.c">
-      <Filter>common</Filter>
+    <ClCompile Include="..\src\char\char_mapif.c">
+      <Filter>char_sql</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\3rdparty\mt19937ar\mt19937ar.h">
+      <Filter>3rdparty\mt19937ar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\3rdparty\libconfig\grammar.h">
+      <Filter>3rdparty\libconfig</Filter>
+    </ClInclude>
+    <ClInclude Include="..\3rdparty\libconfig\libconfig.h">
+      <Filter>3rdparty\libconfig</Filter>
+    </ClInclude>
+    <ClInclude Include="..\3rdparty\libconfig\parsectx.h">
+      <Filter>3rdparty\libconfig</Filter>
+    </ClInclude>
+    <ClInclude Include="..\3rdparty\libconfig\scanctx.h">
+      <Filter>3rdparty\libconfig</Filter>
+    </ClInclude>
+    <ClInclude Include="..\3rdparty\libconfig\scanner.h">
+      <Filter>3rdparty\libconfig</Filter>
+    </ClInclude>
+    <ClInclude Include="..\3rdparty\libconfig\strbuf.h">
+      <Filter>3rdparty\libconfig</Filter>
+    </ClInclude>
+    <ClInclude Include="..\3rdparty\libconfig\wincompat.h">
+      <Filter>3rdparty\libconfig</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\common\winapi.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\common\thread.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\common\mutex.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\common\mempool.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\common\raconf.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\common\msg_conf.h" />
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\common\cli.h" />
+      <Filter>common</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\common\cbasetypes.h">
       <Filter>common</Filter>
     </ClInclude>
@@ -189,44 +252,17 @@
     <ClInclude Include="..\src\char\int_storage.h">
       <Filter>char_sql</Filter>
     </ClInclude>
-    <ClInclude Include="..\3rdparty\mt19937ar\mt19937ar.h">
-      <Filter>3rdparty\mt19937ar</Filter>
+    <ClInclude Include="..\src\char\char_clif.h">
+      <Filter>char_sql</Filter>
     </ClInclude>
-    <ClInclude Include="..\3rdparty\libconfig\grammar.h">
-      <Filter>3rdparty\libconfig</Filter>
+    <ClInclude Include="..\src\char\char_cnslif.h">
+      <Filter>char_sql</Filter>
     </ClInclude>
-    <ClInclude Include="..\3rdparty\libconfig\libconfig.h">
-      <Filter>3rdparty\libconfig</Filter>
+    <ClInclude Include="..\src\char\char_logif.h">
+      <Filter>char_sql</Filter>
     </ClInclude>
-    <ClInclude Include="..\3rdparty\libconfig\parsectx.h">
-      <Filter>3rdparty\libconfig</Filter>
-    </ClInclude>
-    <ClInclude Include="..\3rdparty\libconfig\scanctx.h">
-      <Filter>3rdparty\libconfig</Filter>
-    </ClInclude>
-    <ClInclude Include="..\3rdparty\libconfig\scanner.h">
-      <Filter>3rdparty\libconfig</Filter>
-    </ClInclude>
-    <ClInclude Include="..\3rdparty\libconfig\strbuf.h">
-      <Filter>3rdparty\libconfig</Filter>
-    </ClInclude>
-    <ClInclude Include="..\3rdparty\libconfig\wincompat.h">
-      <Filter>3rdparty\libconfig</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\common\winapi.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\common\thread.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\common\mutex.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\common\mempool.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\common\raconf.h">
-      <Filter>common</Filter>
+    <ClInclude Include="..\src\char\char_mapif.h">
+      <Filter>char_sql</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
