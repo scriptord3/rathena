@@ -48,13 +48,13 @@ struct login_session_data {
 
 #define MAX_SERVERS 30 //max number of mapserv that could be attach
 struct mmo_char_server {
-	char name[20];
-	int fd;
-	uint32 ip;
-	uint16 port;
-	uint16 users;       // user count on this server
-	uint16 type;        // 0=normal, 1=maintenance, 2=over 18, 3=paying, 4=P2P
-	uint16 new_;        // should display as 'new'?
+	char name[20];		//name of char-serv
+	int fd;			//socket fd
+	uint32 ip;		//ip of char-serv
+	uint16 port;		//port his listening to
+	uint16 users;		// user count on this server
+	uint16 type;		// 0=normal, 1=maintenance, 2=over 18, 3=paying, 4=P2P
+	uint16 new_;		// should display as 'new'?
 } server[MAX_SERVERS]; // char server data
 
 struct client_hash_node {

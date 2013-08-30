@@ -23,68 +23,40 @@
 #include <stdlib.h>
 #include <string.h>
 
-//--------------------------------------------------------------------
-// Packet send to all char-servers, except one (wos: without our self)
-//--------------------------------------------------------------------
-int logchrif_sendallwos(int sfd, uint8* buf, size_t len)
-{
-	int i, c;
+void logchrif_on_disconnect(int id);
 
-	for( i = 0, c = 0; i < ARRAYLENGTH(server); ++i )
-	{
+/**
+ * Packet send to all char-servers, except one (wos: without our self)
+ * @param sfd: fd to discard sending to
+ * @param buf: packet to send in form of an array buffer
+ * @param len: size of packet
+ * @return : the number of char-serv the packet was sent to
+ */
+int logchrif_sendallwos(int sfd, uint8* buf, size_t len) {
+	int i, c;
+	for( i = 0, c = 0; i < ARRAYLENGTH(server); ++i ) {
 		int fd = server[i].fd;
-		if( session_isValid(fd) && fd != sfd )
-		{
+		if( session_isValid(fd) && fd != sfd ){
 			WFIFOHEAD(fd,len);
 			memcpy(WFIFOP(fd,0), buf, len);
 			WFIFOSET(fd,len);
 			++c;
 		}
 	}
-
 	return c;
 }
 
-
-/// Initializes a server structure.
-void logchrif_server_init(int id)
-{
-	memset(&server[id], 0, sizeof(server[id]));
-	server[id].fd = -1;
-}
-
-
-/// Destroys a server structure.
-void logchrif_server_destroy(int id)
-{
-	if( server[id].fd != -1 )
-	{
-		do_close(server[id].fd);
-		server[id].fd = -1;
-	}
-}
-
-
-/// Resets all the data related to a server.
-void logchrif_server_reset(int id)
-{
-	online_db->foreach(online_db, login_online_db_setoffline, id); //Set all chars from this char server to offline.
-	logchrif_server_destroy(id);
-	logchrif_server_init(id);
-}
-
-/// Called when the connection to Char Server is disconnected.
-void logchrif_on_disconnect(int id)
-{
-	ShowStatus("Char-server '%s' has disconnected.\n", server[id].name);
-	logchrif_server_reset(id);
-}
-
-//-----------------------------------------------------
-// periodic ip address synchronization
-//-----------------------------------------------------
-static int logchrif_sync_ip_addresses(int tid, unsigned int tick, int id, intptr_t data)
-{
+/**
+ * Timered function to synchronise ip adresses
+ *  Requesting all char to update their registered ip and transmit their new ip
+ *  Actually done each ip_sync_interval
+ * @param tid: timer id
+ * @param tick: tick of execution
+ * @param id: unused
+ * @param data: unused
+ * @return 0
+ */
+static int logchrif_sync_ip_addresses(int tid, unsigned int tick, int id, intptr_t data) {
 	uint8 buf[2];
 	ShowInfo("IP Sync in progress...\n");
 	WBUFW(buf,0) = 0x2735;
@@ -92,6 +64,18 @@ static int logchrif_sync_ip_addresses(int tid, unsigned int tick, int id, intptr
 	return 0;
 }
 
+
+
+
+/// Parsing handlers
+
+/**
+ * Request from char-server to authenticate an account
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv
+ * @param ip: char-serv ip (used for info)
+ * @return 0 not enough info transmited, 1 success
+ */
 int logchrif_parse_reqauth(int fd, int id,char* ip){
 	if( RFIFOREST(fd) < 23 )
 		return 0;
@@ -148,6 +132,12 @@ int logchrif_parse_reqauth(int fd, int id,char* ip){
 	return 1;
 }
 
+/**
+ * Receive a request to update user count for char-serv identified by id
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv
+ * @return 0 not enough info transmited, 1 success
+ */
 int logchrif_parse_ackusercount(int fd, int id){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
@@ -157,13 +147,19 @@ int logchrif_parse_ackusercount(int fd, int id){
 		// how many users on world? (update)
 		if( server[id].users != users ){
 			ShowStatus("set users %s : %d\n", server[id].name, users);
-
 			server[id].users = users;
 		}
 	}
 	return 1;
 }
 
+/**
+ * Receive a  request from char server to change e-email from default "a@a.com"
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv
+ * @param ip: char-serv ip (used for info)
+ * @return 0 not enough info transmited, 1 success
+ */
 int logchrif_parse_updmail(int fd, int id, char* ip){
 	if (RFIFOREST(fd) < 46)
 		return 0;
@@ -190,6 +186,13 @@ int logchrif_parse_updmail(int fd, int id, char* ip){
 	return 1;
 }
 
+/**
+ * Receive a request for account data reply by sending him all mmo_account infos
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv
+ * @param ip: char-serv ip (used for info)
+ * @return 0 not enough info transmited, 1 success
+ */
 int logchrif_parse_reqaccdata(int fd, int id, char *ip){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
@@ -234,6 +237,11 @@ int logchrif_parse_reqaccdata(int fd, int id, char *ip){
 	return 1;
 }
 
+/**
+ * ping request from charserver send a reply
+ * @param fd: fd to parse from (char-serv)
+ * @return 1 success
+ */
 int logchrif_parse_keepalive(int fd){
 	RFIFOSKIP(fd,2);
 	WFIFOHEAD(fd,2);
@@ -242,7 +250,14 @@ int logchrif_parse_keepalive(int fd){
 	return 1;
 }
 
-// 0x2722 <account_id>.L <actual_e-mail>.40B <new_e-mail>.40B
+/**
+ * Map server send information to change an email of an account via char-server
+ * 0x2722 <account_id>.L <actual_e-mail>.40B <new_e-mail>.40B
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv
+ * @param ip: char-serv ip (used for info)
+ * @return 0 not enough info transmited, 1 success
+ */
 int logchrif_parse_reqchangemail(int fd, int id, char* ip){
 	if (RFIFOREST(fd) < 86)
 		return 0;
@@ -277,6 +292,14 @@ int logchrif_parse_reqchangemail(int fd, int id, char* ip){
 	return 1;
 }
 
+/**
+ * Receiving an account state update request from a map-server (relayed via char-server)
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv
+ * @param ip: char-serv ip (used for info)
+ * @return 0 not enough info transmited, 1 success
+ * TODO ssem pretty damn close to logchrif_parse_reqbanacc
+ */
 int logchrif_parse_requpdaccstate(int fd, int id, char* ip){
 	if (RFIFOREST(fd) < 10)
 		return 0;
@@ -313,6 +336,14 @@ int logchrif_parse_requpdaccstate(int fd, int id, char* ip){
 	return 1;
 }
 
+/**
+ * Receiving from map-server via char-server a ban request
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv
+ * @param ip: char-serv ip (used for info)
+ * @return 0 not enough info transmited, 1 success
+ * TODO check logchrif_parse_requpdaccstate for possible merge
+ */
 int logchrif_parse_reqbanacc(int fd, int id, char* ip){
 	if (RFIFOREST(fd) < 18)
 		return 0;
@@ -372,6 +403,13 @@ int logchrif_parse_reqbanacc(int fd, int id, char* ip){
 	return 1;
 }
 
+/**
+ * Receive request for change of sex (sex is reversed)
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv
+ * @param ip: char-serv ip (used for info)
+ * @return 0 not enough info transmited, 1 success
+ */
 int logchrif_parse_reqchgsex(int fd, int id, char* ip){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
@@ -406,6 +444,13 @@ int logchrif_parse_reqchgsex(int fd, int id, char* ip){
 	return 1;
 }
 
+/**
+ * We receive account_reg2 from a char-server, and we send them to other char-servers.
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv
+ * @param ip: char-serv ip (used for info)
+ * @return 0 not enough info transmited, 1 success
+ */
 int logchrif_parse_updreg2(int fd, int id, char* ip){
 	int j;
 	if( RFIFOREST(fd) < 4 || RFIFOREST(fd) < RFIFOW(fd,2) )
@@ -413,7 +458,6 @@ int logchrif_parse_updreg2(int fd, int id, char* ip){
 	else{
 		struct mmo_account acc;
 		AccountDB* accounts = login_get_accounts_db();
-
 		int account_id = RFIFOL(fd,4);
 
 		if( !accounts->load_num(accounts, &acc, account_id) )
@@ -433,10 +477,8 @@ int logchrif_parse_updreg2(int fd, int id, char* ip){
 				remove_control_chars(acc.account_reg2[j].value);
 			}
 			acc.account_reg2_num = j;
-
 			// Save
 			accounts->save(accounts, &acc);
-
 			// Sending information towards the other char-servers.
 			RFIFOW(fd,0) = 0x2729;// reusing read buffer
 			logchrif_sendallwos(fd, RFIFOP(fd,0), RFIFOW(fd,2));
@@ -446,6 +488,13 @@ int logchrif_parse_updreg2(int fd, int id, char* ip){
 	return 1;
 }
 
+/**
+ * Receiving of map-server via char-server an unban request
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv
+ * @param ip: char-serv ip (used for info)
+ * @return 0 not enough info transmited, 1 success
+ */
 int logchrif_parse_requnbanacc(int fd, int id, char* ip){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
@@ -469,6 +518,12 @@ int logchrif_parse_requnbanacc(int fd, int id, char* ip){
 	return 1;
 }
 
+/**
+ * Set account_id to online [Wizputer]
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv
+ * @return 0 not enough info transmited, 1 success
+ */
 int logchrif_parse_setacconline(int fd, int id){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
@@ -477,7 +532,12 @@ int logchrif_parse_setacconline(int fd, int id){
 	return 1;
 }
 
-int logchrif_parse_setaccoffline(int fd, int id){
+/**
+ * Set account_id to offline [Wizputer]
+ * @param fd: fd to parse from (char-serv)
+ * @return 0 not enough info transmited, 1 success
+ */
+int logchrif_parse_setaccoffline(int fd){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
 	login_remove_online_user(RFIFOL(fd,2));
@@ -485,6 +545,12 @@ int logchrif_parse_setaccoffline(int fd, int id){
 	return 1;
 }
 
+/**
+ * Receive list of all online accounts. [Skotlex]
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv
+ * @return 0 not enough info transmited, 1 success
+ */
 int logchrif_parse_updonlinedb(int fd, int id){
 	if (RFIFOREST(fd) < 4 || RFIFOREST(fd) < RFIFOW(fd,2))
 		return 0;
@@ -508,7 +574,12 @@ int logchrif_parse_updonlinedb(int fd, int id){
 	return 1;
 }
 
-int logchrif_parse_reqacc2reg(int fd, int id){
+/**
+ * Request account_reg2 for a character
+ * @param fd: fd to parse from (char-serv)
+ * @return 0 not enough info transmited, 1 success
+ */
+int logchrif_parse_reqacc2reg(int fd){
 	int j;
 	if (RFIFOREST(fd) < 10)
 		return 0;
@@ -543,6 +614,12 @@ int logchrif_parse_reqacc2reg(int fd, int id){
 	return 1;
 }
 
+/**
+ * Received new charip from char-serv, update info
+ * @param fd: char-serv file descriptor
+ * @param id: char-serv id
+ * @return 0 not enough info transmited, 1 success
+ */
 int logchrif_parse_updcharip(int fd, int id){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
@@ -552,6 +629,12 @@ int logchrif_parse_updcharip(int fd, int id){
 	return 1;
 }
 
+/**
+ * Request to set all offline.
+ * @param fd: fd to parse from (char-serv)
+ * @param id: id of char-serv (char-serv)
+ * @return 1 success
+ */
 int logchrif_parse_setalloffline(int fd, int id){
 	ShowInfo("Setting accounts from char-server %d offline.\n", id);
 	online_db->foreach(online_db, login_online_db_setoffline, id);
@@ -559,7 +642,12 @@ int logchrif_parse_setalloffline(int fd, int id){
 	return 1;
 }
 
-int logchrif_parse_updpincode(int fd, int id){
+/**
+ * Req to change PIN Code for a account
+ * @param fd: fd to parse from (char-serv)
+ * @return 0 fail packet have not enough data, 1 success
+ */
+int logchrif_parse_updpincode(int fd){
 	if( RFIFOREST(fd) < 11 )
 		return 0;
 	else{
@@ -571,13 +659,17 @@ int logchrif_parse_updpincode(int fd, int id){
 			acc.pincode_change = time( NULL );
 			accounts->save(accounts, &acc);
 		}
-
 		RFIFOSKIP(fd,11);
 	}
 	return 1;
 }
 
-int logchrif_parse_pincode_authfail(int fd, int id){
+/**
+ * PIN Code was entered wrong too often
+ * @param fd: fd to parse from (char-serv)
+ * @return 0 fail packet have not enough data, 1 success
+ */
+int logchrif_parse_pincode_authfail(int fd){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
 	else{
@@ -599,9 +691,12 @@ int logchrif_parse_pincode_authfail(int fd, int id){
 	return 1;
 }
 
-//--------------------------------
-// Packet parsing for char-servers
-//--------------------------------
+/**
+  * Entry point from char-serv to log-serv
+ * function that check incoming command then split it to correct handler.
+ * @param fd: file descriptor to parse, (link to char-serv)
+ * @return 0=invalid server,marked for disconection,unknow packet; 1=success
+ */
 int logchrif_parse(int fd){
 	int id;
 	uint32 ipl;
@@ -609,7 +704,7 @@ int logchrif_parse(int fd){
 
 	ARR_FIND( 0, ARRAYLENGTH(server), id, server[id].fd == fd );
 	if( id == ARRAYLENGTH(server) ){// not a char server
-		ShowDebug("parse_fromchar: Disconnecting invalid session #%d (is not a char-server)\n", fd);
+		ShowDebug("logchrif_parse: Disconnecting invalid session #%d (is not a char-server)\n", fd);
 		set_eof(fd);
 		do_close(fd);
 		return 0;
@@ -627,56 +722,84 @@ int logchrif_parse(int fd){
 
 	while( RFIFOREST(fd) >= 2 ){
 		uint16 command = RFIFOW(fd,0);
-
 		switch( command ){
-		// request from char-server to authenticate an account
 		case 0x2712: logchrif_parse_reqauth(fd, id, ip); break;
-		//update user cout
 		case 0x2714: logchrif_parse_ackusercount(fd, id); break;
-		// request from char server to change e-email from default "a@a.com"
 		case 0x2715: logchrif_parse_updmail(fd, id, ip); break;
-		// request account data
 		case 0x2716: logchrif_parse_reqaccdata(fd, id, ip); break;
-		// ping request from charserver
 		case 0x2719: logchrif_parse_keepalive(fd); break;
-		// Map server send information to change an email of an account via char-server
 		case 0x2722: logchrif_parse_reqchangemail(fd,id,ip); break;
-		// Receiving an account state update request from a map-server (relayed via char-server)
 		case 0x2724: logchrif_parse_requpdaccstate(fd,id,ip); break;
-		// Receiving of map-server via char-server a ban request
 		case 0x2725: logchrif_parse_reqbanacc(fd,id,ip); break;
-		// Change of sex (sex is reversed)
 		case 0x2727: logchrif_parse_reqchgsex(fd,id,ip); break;
-		// We receive account_reg2 from a char-server, and we send them to other map-servers.
 		case 0x2728: logchrif_parse_updreg2(fd,id,ip); break;
-		// Receiving of map-server via char-server an unban request
 		case 0x272a: logchrif_parse_requnbanacc(fd,id,ip); break;
-		// Set account_id to online [Wizputer]
 		case 0x272b: logchrif_parse_setacconline(fd,id); break;
-		// Set account_id to offline [Wizputer]
-		case 0x272c: logchrif_parse_setaccoffline(fd,id); break;
-		// Receive list of all online accounts. [Skotlex]
+		case 0x272c: logchrif_parse_setaccoffline(fd); break;
 		case 0x272d: logchrif_parse_updonlinedb(fd,id); break;
-		//Request account_reg2 for a character
-		case 0x272e: logchrif_parse_reqacc2reg(fd,id); break;
-		// WAN IP update from char-server
+		case 0x272e: logchrif_parse_reqacc2reg(fd); break;
 		case 0x2736: logchrif_parse_updcharip(fd,id); break;
-		//Request to set all offline.
 		case 0x2737: logchrif_parse_setalloffline(fd,id); break;
-		//Change PIN Code for a account
-		case 0x2738: logchrif_parse_updpincode(fd,id); break;
-		// PIN Code was entered wrong too often
-		case 0x2739: logchrif_parse_pincode_authfail(fd,id); break;
+		case 0x2738: logchrif_parse_updpincode(fd); break;
+		case 0x2739: logchrif_parse_pincode_authfail(fd); break;
 		default:
-			ShowError("parse_fromchar: Unknown packet 0x%x from a char-server! Disconnecting!\n", command);
+			ShowError("logchrif_parse: Unknown packet 0x%x from a char-server! Disconnecting!\n", command);
 			set_eof(fd);
 			return 0;
 		} // switch
 	} // while
-
-	return 0;
+	return 1;
 }
 
+
+
+
+/// Constructor destructor and signal handlers
+
+/**
+ * Initializes a server structure.
+ * @param id: id of char-serv (should be >0, FIXME)
+ */
+void logchrif_server_init(int id) {
+	memset(&server[id], 0, sizeof(server[id]));
+	server[id].fd = -1;
+}
+
+/**
+ * Destroys a server structure.
+ * @param id: id of char-serv (should be >0, FIXME)
+ */
+void logchrif_server_destroy(int id){
+	if( server[id].fd != -1 ) {
+		do_close(server[id].fd);
+		server[id].fd = -1;
+	}
+}
+
+/**
+ * Resets all the data related to a server.
+ *  Actually destroy then recreate the struct
+ * @param id: id of char-serv (should be >0, FIXME)
+ */
+void logchrif_server_reset(int id) {
+	online_db->foreach(online_db, login_online_db_setoffline, id); //Set all chars from this char server to offline.
+	logchrif_server_destroy(id);
+	logchrif_server_init(id);
+}
+
+/**
+ * Called when the connection to Char Server is disconnected.
+ * @param id: id of char-serv (should be >0, FIXME)
+ */
+void logchrif_on_disconnect(int id) {
+	ShowStatus("Char-server '%s' has disconnected.\n", server[id].name);
+	logchrif_server_reset(id);
+}
+
+/**
+ * loginchrif constructor
+ *  Initialisation, function called at start of the login-serv
+ */
 void do_init_loginchrif(void){
 	int i;
 	for( i = 0; i < ARRAYLENGTH(server); ++i )
@@ -689,12 +812,21 @@ void do_init_loginchrif(void){
 	}
 }
 
+/**
+ * Signal handler
+ *  This function try to close properly the serv when a interrupt signal is received.
+ *  current signal catch : SIGTERM, SIGINT
+ */
 void do_shutdown_loginchrif(void){
 	int id;
 	for( id = 0; id < ARRAYLENGTH(server); ++id )
 		logchrif_server_reset(id);
 }
 
+/**
+ * loginchrif destructor
+ *  dealloc..., function called at exit of the login-serv
+ */
 void do_final_loginchrif(void){
 	int i;
 	for( i = 0; i < ARRAYLENGTH(server); ++i )

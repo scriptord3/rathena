@@ -812,7 +812,7 @@ void set_server_type(void) {
 
 /**
  * Login serv constructor
- *  Initialisation, function called at exit of the login-serv
+ *  Initialisation, function called at start of the login-serv
  * @param argc : number of argument from main()
  * @param argv : arguments values from main()
  * @return 0 everything ok else stopping programme execution.

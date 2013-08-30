@@ -168,5 +168,5 @@ void do_init_logincnslif(void){
  * Handler to cleanup module called when logins-serv stop
  */
 void do_final_logincnslif(void){
-	return 0;
+	return;
 }

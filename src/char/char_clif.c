@@ -1032,9 +1032,10 @@ int chclif_parse_chkcaptcha(int fd){
 	return 1;
 }
 
-/*
- * Entry point from client to charserv
+/**
+ * Entry point from client to char-serv
  * function that check incoming command then split it to correct handler.
+ * @param fd: file descriptor to parse, (link to client)
  */
 int chclif_parse(int fd) {
 	unsigned short cmd;
