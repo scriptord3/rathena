@@ -2062,8 +2062,8 @@ int char_lan_config_read(const char *lancfgName) {
 		remove_control_chars(w4);
 
 		if( strcmpi(w1, "subnet") == 0 ){
-			if(subnet_count>=s_subnet) { //we skipping instead break in case we want to add other conf in that file
-				ShowError("%s: Has too many subnet defined skiping line=%d\n", lancfgName, line_num);
+			if(subnet_count>=s_subnet) { //We skip instead of break in case we want to add other conf in that file.
+				ShowError("%s: Too many subnets defined, skipping line %d...\n", lancfgName, line_num);
 				continue;
 			}
 			subnet[subnet_count].mask = str2ip(w2);

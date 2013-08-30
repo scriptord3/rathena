@@ -1,11 +1,11 @@
-/**
+﻿/**
  * @file login.c
- * Module purpose is to read configuration for login-serv and handle accounts,
- *  also synchronise all login interface: loginchrif, loginclif, logincnslif
- * Licensed under GNU GPL
- *  For more information, see LICENCE in the main folder
+ * Module purpose is to read configuration for login-server and handle accounts,
+ *  and also to synchronise all login interfaces: loginchrif, loginclif, logincnslif.
+ * Licensed under GNU GPL.
+ *  For more information, see LICENCE in the main folder.
  * @author Athena Dev Teams < r15k
- * @author rA Dev team
+ * @author rAthena Dev Team
  */
 
 #include "../common/core.h"
@@ -101,7 +101,7 @@ static AccountDB* get_account_engine(void) {
 
 
 /**
- * Sub function to create an online_login_data and save it to db
+ * Sub function to create an online_login_data and save it to db.
  * @param key: Key of the database entry
  * @param ap: args
  * @return : Data identified by the key to be put in the database
@@ -117,9 +117,9 @@ DBData login_create_online_user(DBKey key, va_list args) {
 }
 
 /**
- * Function to add an user in online_db
- *  Checking if the user already register in the db.
- *  Stop disconection timer if was set
+ * Function to add a user in online_db.
+ *  Checking if the user is already registered in the db.
+ *  Stop disconnection timer if set.
  * @param char_server: id of char-serv on wich the player is
  * @param account_id: the account identifier
  */
@@ -135,8 +135,8 @@ struct online_login_data* login_add_online_user(int char_server, int account_id)
 }
 
 /**
- * Function to remove an user from online_db
- *  Checking if user was already scheduled for deletion and remove that timer if so
+ * Function to remove a user from online_db.
+ *  Checking if user was already scheduled for deletion, and remove that timer if found.
  * @param account_id: the account identifier
  */
 void login_remove_online_user(int account_id) {
@@ -151,10 +151,10 @@ void login_remove_online_user(int account_id) {
 }
 
 /**
- * Timered function to disconect an user from login.
- *  This is done either after auth_ok of kicked by char
- *  Removing user from auth_db and online_db
- *  Atm delay is AUTH_TIMEOUT
+ * Timered function to disconnect a user from login.
+ *  This is done either after auth_ok or kicked by char-server.
+ *  Removing user from auth_db and online_db.
+ *  Delay is AUTH_TIMEOUT by default.
  * @param tid: timer id
  * @param tick: tick of execution
  * @param id: user account id
@@ -172,11 +172,11 @@ int login_waiting_disconnect_timer(int tid, unsigned int tick, int id, intptr_t 
 }
 
 /**
- * Sub function to apply on online_db
- * Mark a char offline
+ * Sub function to apply on online_db.
+ * Mark a character as offline.
  * @param data: 1 entry in the db
  * @param ap: args
- * @return :Value to be added up by the function that is applying this
+ * @return : Value to be added up by the function that is applying this
  * @see DBApply
  */
 int login_online_db_setoffline(DBKey key, DBData *data, va_list ap) {
@@ -195,11 +195,11 @@ int login_online_db_setoffline(DBKey key, DBData *data, va_list ap) {
 }
 
 /**
- * Sub fonction of login_online_data_cleanup
- *  Checking if all user in db still are connected to a char server and remove them if not
+ * Sub function of login_online_data_cleanup.
+ *  Checking if all users in db are still connected to a char-server, and remove them if they aren't.
  * @param data: 1 entry in the db
  * @param ap: args
- * @return :Value to be added up by the function that is applying this
+ * @return: Value to be added up by the function that is applying this
  * @see DBApply
  */
 static int login_online_data_cleanup_sub(DBKey key, DBData *data, va_list ap) {
@@ -210,13 +210,13 @@ static int login_online_data_cleanup_sub(DBKey key, DBData *data, va_list ap) {
 }
 
 /**
- * Timered function to check if user still connected
- *  Atm launch each 600s
+ * Timered function to check if user is still connected.
+ *  Launches every 600s by default.
  * @param tid: timer id
  * @param tick: tick of execution
  * @param id: unused
  * @param data: unused
- * @return :0
+ * @return : 0
  */
 static int login_online_data_cleanup(int tid, unsigned int tick, int id, intptr_t data) {
 	online_db->foreach(online_db, login_online_data_cleanup_sub);
@@ -225,16 +225,16 @@ static int login_online_data_cleanup(int tid, unsigned int tick, int id, intptr_
 
 
 /**
- * Create a  new account and save it in db/sql
+ * Create a new account and save it in db/sql.
  * @param userid: string for user login
  * @param pass: string for user pass
  * @param sex: should be M|F|S (todo make an enum ?)
  * @param last_ip:
  * @return :
  *	-1: success
- *	0:unregistered id (wrong sex fail to create in db);
- *	1:incorect pass or userid (userid|pass too short or already exist);
- *	3:registration limit exceeded;
+ *	0: unregistered id (wrong sex fail to create in db);
+ *	1: incorrect pass or userid (userid|pass too short or already exist);
+ *	3: registration limit exceeded;
  */
 int login_mmo_auth_new(const char* userid, const char* pass, const char sex, const char* last_ip) {
 	static int num_regs = 0; // registration counter
@@ -290,17 +290,17 @@ int login_mmo_auth_new(const char* userid, const char* pass, const char sex, con
 }
 
 /**
- * Check/authentication of a connection
+ * Check/authentication of a connection.
  * @param sd: string (atm:md5key or dbpass)
  * @param isServer: string (atm:md5key or dbpass)
  * @return :
  *	-1: success
- *	0:unregistered id;
- *	1:incorect pass;
- *	2:expired id
- *	3:blacklisted (or registration limit exceeded if new acc);
- *	5:invalid client_version|hash;
- *	6:banned
+ *	0: unregistered id;
+ *	1: incorrect pass;
+ *	2: expired id
+ *	3: blacklisted (or registration limit exceeded if new acc);
+ *	5: invalid client_version|hash;
+ *	6: banned
  *	x: acc state (TODO document me deeper)
  */
 int login_mmo_auth(struct login_session_data* sd, bool isServer) {
@@ -436,9 +436,9 @@ int login_mmo_auth(struct login_session_data* sd, bool isServer) {
 }
 
 /**
- * Sub fonction of login_check_password
- *  Checking if passwd matching the one in db hashed with client md5key
- *  test if(md5(str1+str2)==passwd)
+ * Sub function of login_check_password.
+ *  Checking if password matches the one in db hashed with client md5key.
+ *  Test if(md5(str1+str2)==passwd).
  * @param str1: string (atm:md5key or dbpass)
  * @param str2: string (atm:md5key or dbpass)
  * @param passwd: pass to check
@@ -454,7 +454,7 @@ bool login_check_encrypted(const char* str1, const char* str2, const char* passw
 }
 
 /**
- * Verify if a password is correct
+ * Verify if a password is correct.
  * @param md5key: md5key of client
  * @param passwdenc: encode key of client
  * @param passwd: pass to check
@@ -474,7 +474,7 @@ bool login_check_password(const char* md5key, int passwdenc, const char* passwd,
 }
 
 /**
- * Test to know if an IP come from LAN or WAN.
+ * Test to determine if an IP come from LAN or WAN.
  * @param ip: ip to check if in auth network
  * @return 0 if from wan, or subnet_char_ip if lan
  */
@@ -504,9 +504,9 @@ void login_do_final_msg(void){
 /// Set and read Configurations
 
 /**
- * Reading Lan Support configuration
+ * Reading Lan Support configuration.
  * @param lancfgName: Name of the lan configuration (could be fullpath)
- * @return 0:succes, 1:failure (file not found|readable)
+ * @return 0:success, 1:failure (file not found|readable)
  */
 int login_lan_config_read(const char *lancfgName) {
 	FILE *fp;
@@ -531,8 +531,8 @@ int login_lan_config_read(const char *lancfgName) {
 		}
 
 		if( strcmpi(w1, "subnet") == 0 ){
-			if(subnet_count>=s_subnet) { //we skipping instead break in case we want to add other conf in that file
-				ShowError("%s: Has too many subnet defined skiping line=%d\n", lancfgName, line_num);
+			if(subnet_count>=s_subnet) { //We skip instead of break in case we want to add other conf in that file.
+				ShowError("%s: Too many subnets defined, skipping line %d...\n", lancfgName, line_num);
 				continue;
 			}
 			subnet[subnet_count].mask = str2ip(w2);
@@ -557,9 +557,9 @@ int login_lan_config_read(const char *lancfgName) {
 }
 
 /**
- * Reading main configuration file
+ * Reading main configuration file.
  * @param cfgName: Name of the configuration (could be fullpath)
- * @return 0:succes, 1:failure (file not found|readable)
+ * @return 0:success, 1:failure (file not found|readable)
  */
 int login_config_read(const char* cfgName) {
 	char line[1024], w1[1024], w2[1024];
@@ -687,7 +687,7 @@ int login_config_read(const char* cfgName) {
 }
 
 /**
- * Init login-serv default configuration
+ * Init login-serv default configuration.
  */
 void login_set_defaults() {
 	login_config.login_ip = INADDR_ANY;
@@ -783,7 +783,7 @@ void do_final(void) {
 
 /**
  * Signal handler
- *  This function try to close properly the serv when a interrupt signal is received.
+ *  This function attempts to properly close the server when an interrupt signal is received.
  *  current signal catch : SIGTERM, SIGINT
  */
 void do_shutdown(void) {
@@ -799,7 +799,7 @@ void do_shutdown(void) {
 
 /**
  * Signal handler
- *  Function called when the server has received a crash signal
+ *  Function called when the server has received a crash signal.
  *  current signal catch : SIGSEGV, SIGFPE
  */
 void do_abort(void) {
@@ -812,7 +812,7 @@ void set_server_type(void) {
 
 /**
  * Login serv constructor
- *  Initialisation, function called at start of the login-serv
+ *  Initialisation, function called at start of the login-serv.
  * @param argc : number of argument from main()
  * @param argv : arguments values from main()
  * @return 0 everything ok else stopping programme execution.

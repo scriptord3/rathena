@@ -1,10 +1,10 @@
 /**
  * @file logincnslif.h
- * Module purpose is to handle incoming and outgoing request with console
- * Licensed under GNU GPL
- *  For more information, see LICENCE in the main folder
+ * Module purpose is to handle incoming and outgoing requests with console.
+ * Licensed under GNU GPL.
+ *  For more information, see LICENCE in the main folder.
  * @author Athena Dev Teams originally in login.c
- * @author rA Dev team
+ * @author rAthena Dev Team
  */
 
 #ifndef CONSOLEIF_H

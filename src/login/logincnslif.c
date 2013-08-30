@@ -1,10 +1,10 @@
 /**
  * @file logincnslif.c
- * Module purpose is to handle incoming and outgoing request with console
- * Licensed under GNU GPL
- *  For more information, see LICENCE in the main folder
+ * Module purpose is to handle incoming and outgoing requests with console.
+ * Licensed under GNU GPL.
+ *  For more information, see LICENCE in the main folder.
  * @author Athena Dev Teams originally in login.c
- * @author rA Dev team
+ * @author rAthena Dev Team
  */
 
 #include "../common/mmo.h" //cbasetype + NAME_LENGTH
@@ -21,8 +21,8 @@
 #include <string.h>
 
 /*======================================================
- * Login-Server console  help starting option info
- * Do not rename function used as extern
+ * Login-server console help: starting option info.
+ * Do not rename function used as extern.
  *------------------------------------------------------*/
 void display_helpscreen(bool do_exit) {
 	ShowInfo("Usage: %s [options]\n", SERVER_NAME);
@@ -39,9 +39,9 @@ void display_helpscreen(bool do_exit) {
 }
 
 /*
- * Read the option specify in command line
- * and assign the confs used by the different server
- * exit on failure or return true
+ * Read the option specified in command line
+ * and assign the confs used by the different server.
+ * Exit on failure or return true.
  */
 int logcnsl_get_options(int argc, char ** argv) {
 	int i = 0;
@@ -155,7 +155,7 @@ int cnslif_parse(const char* buf){
 
 /*
  * Initialise the module.
- * Launched at login-serv start, create db or other long scope variable here
+ * Launched at login-serv start, create db or other long scope variable here.
  */
 void do_init_logincnslif(void){
 	if( login_config.console ) {
@@ -165,7 +165,7 @@ void do_init_logincnslif(void){
 }
 
 /*
- * Handler to cleanup module called when logins-serv stop
+ * Handler to cleanup module, called when login-server stops.
  */
 void do_final_logincnslif(void){
 	return;

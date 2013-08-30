@@ -1,10 +1,10 @@
 /**
  * @file loginchrif.c
- * Module purpose is to handle incoming and outgoing request with char-serv
- * Licensed under GNU GPL
- *  For more information, see LICENCE in the main folder
+ * Module purpose is to handle incoming and outgoing requests with char-server.
+ * Licensed under GNU GPL.
+ *  For more information, see LICENCE in the main folder.
  * @author Athena Dev Teams originally in login.c
- * @author rA Dev team
+ * @author rAthena Dev Team
  */
 
 #include "../common/timer.h" //difftick
@@ -26,7 +26,7 @@
 void logchrif_on_disconnect(int id);
 
 /**
- * Packet send to all char-servers, except one (wos: without our self)
+ * Packet send to all char-servers, except one. (wos: without our self)
  * @param sfd: fd to discard sending to
  * @param buf: packet to send in form of an array buffer
  * @param len: size of packet
@@ -47,9 +47,9 @@ int logchrif_sendallwos(int sfd, uint8* buf, size_t len) {
 }
 
 /**
- * Timered function to synchronise ip adresses
- *  Requesting all char to update their registered ip and transmit their new ip
- *  Actually done each ip_sync_interval
+ * Timered function to synchronise ip addresses.
+ *  Requesting all char to update their registered ip and transmit their new ip.
+ *  Performed each ip_sync_interval.
  * @param tid: timer id
  * @param tick: tick of execution
  * @param id: unused
@@ -70,11 +70,11 @@ static int logchrif_sync_ip_addresses(int tid, unsigned int tick, int id, intptr
 /// Parsing handlers
 
 /**
- * Request from char-server to authenticate an account
+ * Request from char-server to authenticate an account.
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
  * @param ip: char-serv ip (used for info)
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_reqauth(int fd, int id,char* ip){
 	if( RFIFOREST(fd) < 23 )
@@ -133,10 +133,10 @@ int logchrif_parse_reqauth(int fd, int id,char* ip){
 }
 
 /**
- * Receive a request to update user count for char-serv identified by id
+ * Receive a request to update user count for char-server identified by id.
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_ackusercount(int fd, int id){
 	if( RFIFOREST(fd) < 6 )
@@ -154,11 +154,11 @@ int logchrif_parse_ackusercount(int fd, int id){
 }
 
 /**
- * Receive a  request from char server to change e-email from default "a@a.com"
+ * Receive a request from char-server to change e-mail from default "a@a.com".
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
  * @param ip: char-serv ip (used for info)
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_updmail(int fd, int id, char* ip){
 	if (RFIFOREST(fd) < 46)
@@ -187,11 +187,11 @@ int logchrif_parse_updmail(int fd, int id, char* ip){
 }
 
 /**
- * Receive a request for account data reply by sending him all mmo_account infos
+ * Receive a request for account data reply by sending all mmo_account information.
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
  * @param ip: char-serv ip (used for info)
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_reqaccdata(int fd, int id, char *ip){
 	if( RFIFOREST(fd) < 6 )
@@ -238,7 +238,7 @@ int logchrif_parse_reqaccdata(int fd, int id, char *ip){
 }
 
 /**
- * ping request from charserver send a reply
+ * Ping request from char-server to send a reply.
  * @param fd: fd to parse from (char-serv)
  * @return 1 success
  */
@@ -251,12 +251,12 @@ int logchrif_parse_keepalive(int fd){
 }
 
 /**
- * Map server send information to change an email of an account via char-server
+ * Map server send information to change an email of an account via char-server.
  * 0x2722 <account_id>.L <actual_e-mail>.40B <new_e-mail>.40B
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
  * @param ip: char-serv ip (used for info)
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_reqchangemail(int fd, int id, char* ip){
 	if (RFIFOREST(fd) < 86)
@@ -293,12 +293,12 @@ int logchrif_parse_reqchangemail(int fd, int id, char* ip){
 }
 
 /**
- * Receiving an account state update request from a map-server (relayed via char-server)
+ * Receiving an account state update request from a map-server (relayed via char-server).
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
  * @param ip: char-serv ip (used for info)
- * @return 0 not enough info transmited, 1 success
- * TODO ssem pretty damn close to logchrif_parse_reqbanacc
+ * @return 0 not enough info transmitted, 1 success
+ * TODO seems pretty damn close to logchrif_parse_reqbanacc
  */
 int logchrif_parse_requpdaccstate(int fd, int id, char* ip){
 	if (RFIFOREST(fd) < 10)
@@ -337,11 +337,11 @@ int logchrif_parse_requpdaccstate(int fd, int id, char* ip){
 }
 
 /**
- * Receiving from map-server via char-server a ban request
+ * Receiving a ban request from map-server via char-server.
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
  * @param ip: char-serv ip (used for info)
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  * TODO check logchrif_parse_requpdaccstate for possible merge
  */
 int logchrif_parse_reqbanacc(int fd, int id, char* ip){
@@ -404,11 +404,11 @@ int logchrif_parse_reqbanacc(int fd, int id, char* ip){
 }
 
 /**
- * Receive request for change of sex (sex is reversed)
+ * Receiving a sex change request (sex is reversed).
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
  * @param ip: char-serv ip (used for info)
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_reqchgsex(int fd, int id, char* ip){
 	if( RFIFOREST(fd) < 6 )
@@ -449,7 +449,7 @@ int logchrif_parse_reqchgsex(int fd, int id, char* ip){
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
  * @param ip: char-serv ip (used for info)
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_updreg2(int fd, int id, char* ip){
 	int j;
@@ -489,11 +489,11 @@ int logchrif_parse_updreg2(int fd, int id, char* ip){
 }
 
 /**
- * Receiving of map-server via char-server an unban request
+ * Receiving an unban request from map-server via char-server.
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
  * @param ip: char-serv ip (used for info)
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_requnbanacc(int fd, int id, char* ip){
 	if( RFIFOREST(fd) < 6 )
@@ -519,10 +519,10 @@ int logchrif_parse_requnbanacc(int fd, int id, char* ip){
 }
 
 /**
- * Set account_id to online [Wizputer]
+ * Set account_id to online. [Wizputer]
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_setacconline(int fd, int id){
 	if( RFIFOREST(fd) < 6 )
@@ -533,9 +533,9 @@ int logchrif_parse_setacconline(int fd, int id){
 }
 
 /**
- * Set account_id to offline [Wizputer]
+ * Set account_id to offline. [Wizputer]
  * @param fd: fd to parse from (char-serv)
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_setaccoffline(int fd){
 	if( RFIFOREST(fd) < 6 )
@@ -549,7 +549,7 @@ int logchrif_parse_setaccoffline(int fd){
  * Receive list of all online accounts. [Skotlex]
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_updonlinedb(int fd, int id){
 	if (RFIFOREST(fd) < 4 || RFIFOREST(fd) < RFIFOW(fd,2))
@@ -575,9 +575,9 @@ int logchrif_parse_updonlinedb(int fd, int id){
 }
 
 /**
- * Request account_reg2 for a character
+ * Request account_reg2 for a character.
  * @param fd: fd to parse from (char-serv)
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_reqacc2reg(int fd){
 	int j;
@@ -615,10 +615,10 @@ int logchrif_parse_reqacc2reg(int fd){
 }
 
 /**
- * Received new charip from char-serv, update info
+ * Received new charip from char-serv, update information.
  * @param fd: char-serv file descriptor
  * @param id: char-serv id
- * @return 0 not enough info transmited, 1 success
+ * @return 0 not enough info transmitted, 1 success
  */
 int logchrif_parse_updcharip(int fd, int id){
 	if( RFIFOREST(fd) < 6 )
@@ -630,7 +630,7 @@ int logchrif_parse_updcharip(int fd, int id){
 }
 
 /**
- * Request to set all offline.
+ * Request to set all accounts offline.
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv (char-serv)
  * @return 1 success
@@ -643,9 +643,9 @@ int logchrif_parse_setalloffline(int fd, int id){
 }
 
 /**
- * Req to change PIN Code for a account
+ * Request to change PIN Code for an account.
  * @param fd: fd to parse from (char-serv)
- * @return 0 fail packet have not enough data, 1 success
+ * @return 0 fail (packet does not have enough data), 1 success
  */
 int logchrif_parse_updpincode(int fd){
 	if( RFIFOREST(fd) < 11 )
@@ -665,9 +665,9 @@ int logchrif_parse_updpincode(int fd){
 }
 
 /**
- * PIN Code was entered wrong too often
+ * PIN Code was incorrectly entered too many times.
  * @param fd: fd to parse from (char-serv)
- * @return 0 fail packet have not enough data, 1 success
+ * @return 0 fail (packet does not have enough data), 1 success
  */
 int logchrif_parse_pincode_authfail(int fd){
 	if( RFIFOREST(fd) < 6 )
@@ -692,8 +692,8 @@ int logchrif_parse_pincode_authfail(int fd){
 }
 
 /**
-  * Entry point from char-serv to log-serv
- * function that check incoming command then split it to correct handler.
+ * Entry point from char-server to log-server.
+ * Function that checks incoming command, then splits it to the correct handler.
  * @param fd: file descriptor to parse, (link to char-serv)
  * @return 0=invalid server,marked for disconection,unknow packet; 1=success
  */
@@ -778,7 +778,7 @@ void logchrif_server_destroy(int id){
 
 /**
  * Resets all the data related to a server.
- *  Actually destroy then recreate the struct
+ *  Actually destroys then recreates the struct.
  * @param id: id of char-serv (should be >0, FIXME)
  */
 void logchrif_server_reset(int id) {
@@ -798,7 +798,7 @@ void logchrif_on_disconnect(int id) {
 
 /**
  * loginchrif constructor
- *  Initialisation, function called at start of the login-serv
+ *  Initialisation, function called at start of the login-serv.
  */
 void do_init_loginchrif(void){
 	int i;
@@ -814,7 +814,7 @@ void do_init_loginchrif(void){
 
 /**
  * Signal handler
- *  This function try to close properly the serv when a interrupt signal is received.
+ *  This function attempts to properly close the server when an interrupt signal is received.
  *  current signal catch : SIGTERM, SIGINT
  */
 void do_shutdown_loginchrif(void){

@@ -1,11 +1,11 @@
 /**
  * @file login.h
- * Module purpose is to read configuration for login-serv and handle accounts,
- *  also synchronise all login interface: loginchrif, loginclif, logincnslif
- * Licensed under GNU GPL
- *  For more information, see LICENCE in the main folder
+ * Module purpose is to read configuration for login-server and handle accounts,
+ *  and also to synchronise all login interfaces: loginchrif, loginclif, logincnslif.
+ * Licensed under GNU GPL.
+ *  For more information, see LICENCE in the main folder.
  * @author Athena Dev Teams < r15k
- * @author rA Dev team
+ * @author rAthena Dev Team
  */
 
 #ifndef _LOGIN_H_

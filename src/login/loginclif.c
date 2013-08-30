@@ -1,10 +1,10 @@
 /**
  * @file loginclif.c
- * Module purpose is to handle incoming and outgoing request with client
- * Licensed under GNU GPL
- *  For more information, see LICENCE in the main folder
+ * Module purpose is to handle incoming and outgoing requests with client.
+ * Licensed under GNU GPL.
+ *  For more information, see LICENCE in the main folder.
  * @author Athena Dev Teams originally in login.c
- * @author rA Dev team
+ * @author rAthena Dev Team
  */
 
 #include "../common/timer.h" //difftick
@@ -27,7 +27,7 @@
 #include <string.h>
 
 /**
- * Transmit auth result to client
+ * Transmit auth result to client.
  * @param fd: client file desciptor link
  * @param result: result to transmit to client, see below
  *  1 : Server closed
@@ -43,7 +43,7 @@ static void logclif_sent_auth_result(int fd,char result){
 }
 
 /**
- * Auth succed inform client and create an temp auth_node
+ * Auth successful, inform client and create a temp auth_node.
  * @param sd: player session
  */
 static void logclif_auth_ok(struct login_session_data* sd) {
@@ -158,7 +158,7 @@ static void logclif_auth_ok(struct login_session_data* sd) {
 }
 
 /**
- * Inform client that auth as failed
+ * Inform client that auth has failed.
  * @param sd: player session
  * @param result: nb (msg define in conf)
     0 = Unregistered ID
@@ -367,8 +367,8 @@ static int logclif_parse_reqkey(int fd, struct login_session_data *sd){
 }
 
 /*
- * Char requesting to connect to the login-serv
- * This is needed to exchange packet
+ * Char-server request to connect to the login-server.
+ * This is needed to exchange packets.
  */
 static int logclif_parse_reqcharconnec(int fd, struct login_session_data *sd, char* ip){
 	if (RFIFOREST(fd) < 86)
@@ -512,14 +512,14 @@ int logclif_parse(int fd) {
 
 /*
  * Initialise the module.
- * Launched at login-serv start, create db or other long scope variable here
+ * Launched at login-serv start, create db or other long scope variable here.
  */
 void do_init_loginclif(void){
 	return;
 }
 
 /*
- * Handler to cleanup module called when logins-serv stop
+ * Handler to cleanup module, called when login-server stops.
  */
 void do_final_loginclif(void){
 	return;
