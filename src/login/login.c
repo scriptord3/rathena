@@ -1,7 +1,7 @@
-﻿/**
+/**
  * @file login.c
  * Module purpose is to read configuration for login-server and handle accounts,
- *  and also to synchronise all login interfaces: loginchrif, loginclif, logincnslif.
+ *  and also to synchronize all login interfaces: loginchrif, loginclif, logincnslif.
  * Licensed under GNU GPL.
  *  For more information, see LICENCE in the main folder.
  * @author Athena Dev Teams < r15k
@@ -31,8 +31,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+//definition of exported var declared in .h
+struct mmo_char_server server[MAX_SERVERS]; // char server data
+struct Login_Config login_config;
+DBMap* online_db;
+DBMap* auth_db;
+
 #define LOGIN_MAX_MSG 30 //max number of msg_conf registered
-static char* msg_table[LOGIN_MAX_MSG]; // Login Server messages_conf
+char* msg_table[LOGIN_MAX_MSG]; // Login Server messages_conf
 // Account engines available
 static struct{
 	AccountDB* (*constructor)(void);
@@ -67,6 +74,9 @@ struct s_subnet {
 int subnet_count = 0; //number of subnet config
 
 int login_fd; // login server file descriptor socket
+
+//early declaration
+bool login_check_password(const char* md5key, int passwdenc, const char* passwd, const char* refpass);
 
 ///Accessors
 AccountDB* login_get_accounts_db(void){
@@ -122,6 +132,7 @@ DBData login_create_online_user(DBKey key, va_list args) {
  *  Stop disconnection timer if set.
  * @param char_server: id of char-serv on wich the player is
  * @param account_id: the account identifier
+ * @return the new|registered online data
  */
 struct online_login_data* login_add_online_user(int char_server, int account_id){
 	struct online_login_data* p;
@@ -721,9 +732,9 @@ void login_set_defaults() {
 	login_config.client_hash_nodes = NULL;
 
 	//other default conf
-	login_config.loginconf_name = "conf/login_athena.conf";
-	login_config.lanconf_name = "conf/subnet_athena.conf";
-	login_config.msgconf_name = "conf/msg_conf/login_msg.conf";
+	safestrncpy(login_config.loginconf_name, "conf/login_athena.conf", sizeof(login_config.loginconf_name));
+	safestrncpy(login_config.lanconf_name, "conf/subnet_athena.conf", sizeof(login_config.lanconf_name));
+	safestrncpy(login_config.msgconf_name, "conf/msg_conf/login_msg.conf", sizeof(login_config.msgconf_name));
 }
 
 
@@ -826,7 +837,7 @@ int do_init(int argc, char** argv) {
 
 	// read login-server configuration
 	login_set_defaults();
-	logcnsl_get_options(argc,argv);
+	logcnslif_get_options(argc,argv);
 
 	login_config_read(login_config.loginconf_name);
 	msg_config_read(login_config.msgconf_name);

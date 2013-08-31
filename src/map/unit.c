@@ -126,7 +126,7 @@ TBL_PC* unit_get_master(struct block_list *bl){
 	return NULL;
 }
 
-int* unit_get_masterteleport_timer(struct block_list *bl){
+int32* unit_get_masterteleport_timer(struct block_list *bl){
 	if(bl)
 	switch(bl->type){
 	case BL_HOM: return &(((TBL_HOM *)bl)->masterteleport_timer);
@@ -139,7 +139,7 @@ int* unit_get_masterteleport_timer(struct block_list *bl){
 
 int unit_teleport_timer(int tid, unsigned int tick, int id, intptr_t data){
 	struct block_list *bl = map_id2bl(id);
-	int *mast_tid = unit_get_masterteleport_timer(bl);
+	int32 *mast_tid = unit_get_masterteleport_timer(bl);
 
 	if(tid == INVALID_TIMER || mast_tid == NULL)
 		return 0;
@@ -165,7 +165,7 @@ int unit_check_start_teleport_timer(struct block_list *sbl){
 		case BL_MER : max_dist = MAX_MER_DISTANCE; break;
 	}
 	if(msd && max_dist){ //if there is a master and it's a valid type
-		int *msd_tid = unit_get_masterteleport_timer(sbl);
+		int32 *msd_tid = unit_get_masterteleport_timer(sbl);
 		if(msd_tid == NULL) return 0;
 		if (!check_distance_bl(&msd->bl, sbl, max_dist)) {
 			if(*msd_tid == INVALID_TIMER || *msd_tid == 0)

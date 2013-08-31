@@ -232,7 +232,12 @@ static void logclif_auth_failed(struct login_session_data* sd, int result) {
 	}
 }
 
-//0x200 <account.userid>.24B.
+/**
+ * Received a keepalive packet to maintain connection
+ * 0x200 <account.userid>.24B.
+ * @param fd: fd to parse from (client fd)
+ * @return 0 not enough info transmitted, 1 success
+ */
 static int logclif_parse_keepalive(int fd){
 	if (RFIFOREST(fd) < 26)
 		return 0;
@@ -240,7 +245,12 @@ static int logclif_parse_keepalive(int fd){
 	return 1;
 }
 
-// S 0204 <md5 hash>.16B (kRO 2004-05-31aSakexe langtype 0 and 6)
+/**
+ * Received a keepalive packet to maintain connection
+ * S 0204 <md5 hash>.16B (kRO 2004-05-31aSakexe langtype 0 and 6)
+ * @param fd: fd to parse from (client fd)
+ * @return 0 not enough info transmitted, 1 success
+ */
 static int logclif_parse_updclhash(int fd, struct login_session_data *sd){
 	if (RFIFOREST(fd) < 18)
 		return 0;
@@ -250,106 +260,118 @@ static int logclif_parse_updclhash(int fd, struct login_session_data *sd){
 	return 1;
 }
 
-// S 0064 <version>.L <username>.24B <password>.24B <clienttype>.B
-// S 0277 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B
-// S 02b0 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B <g_isGravityID>.B
-// S 01dd <version>.L <username>.24B <password hash>.16B <clienttype>.B
-// S 01fa <version>.L <username>.24B <password hash>.16B <clienttype>.B <?>.B(index of the connection in the clientinfo file (+10 if the command-line contains "pc"))
-// S 027c <version>.L <username>.24B <password hash>.16B <clienttype>.B <?>.13B(junk)
-// S 0825 <packetsize>.W <version>.L <clienttype>.B <userid>.24B <password>.27B <mac>.17B <ip>.15B <token>.(packetsize - 0x5C)B
+/**
+ * Received connection request
+ * @param fd: file descriptor to parse from (client)
+ * @param sd: client session
+ * @param command: packet type sent
+ * @param ip: ipv4 adresse (client)
+ *  S 0064 <version>.L <username>.24B <password>.24B <clienttype>.B
+ *  S 0277 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B
+ *  S 02b0 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B <g_isGravityID>.B
+ *  S 01dd <version>.L <username>.24B <password hash>.16B <clienttype>.B
+ *  S 01fa <version>.L <username>.24B <password hash>.16B <clienttype>.B <?>.B(index of the connection in the clientinfo file (+10 if the command-line contains "pc"))
+ *  S 027c <version>.L <username>.24B <password hash>.16B <clienttype>.B <?>.13B(junk)
+ *  S 0825 <packetsize>.W <version>.L <clienttype>.B <userid>.24B <password>.27B <mac>.17B <ip>.15B <token>.(packetsize - 0x5C)B
+ * @param fd: fd to parse from (client fd)
+ * @return 0 failure, 1 success
+ */
 static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int command, char* ip){
-		{
-			size_t packet_len = RFIFOREST(fd);
+	size_t packet_len = RFIFOREST(fd);
 
-			if( (command == 0x0064 && packet_len < 55)
-			||  (command == 0x0277 && packet_len < 84)
-			||  (command == 0x02b0 && packet_len < 85)
-			||  (command == 0x01dd && packet_len < 47)
-			||  (command == 0x01fa && packet_len < 48)
-			||  (command == 0x027c && packet_len < 60)
-			||  (command == 0x0825 && (packet_len < 4 || packet_len < RFIFOW(fd, 2))) )
+	if( (command == 0x0064 && packet_len < 55)
+	||  (command == 0x0277 && packet_len < 84)
+	||  (command == 0x02b0 && packet_len < 85)
+	||  (command == 0x01dd && packet_len < 47)
+	||  (command == 0x01fa && packet_len < 48)
+	||  (command == 0x027c && packet_len < 60)
+	||  (command == 0x0825 && (packet_len < 4 || packet_len < RFIFOW(fd, 2))) )
+		return 0;
+	else {
+		int result;
+		uint32 version;
+		char username[NAME_LENGTH];
+		char password[PASSWD_LENGHT];
+		unsigned char passhash[16];
+		uint8 clienttype;
+		bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
+
+		// Shinryo: For the time being, just use token as password.
+		if(command == 0x0825) {
+			char *accname = (char *)RFIFOP(fd, 9);
+			char *token = (char *)RFIFOP(fd, 0x5C);
+			size_t uAccLen = strlen(accname);
+			size_t uTokenLen = RFIFOREST(fd) - 0x5C;
+
+			version = RFIFOL(fd,4);
+
+			if(uAccLen > NAME_LENGTH - 1 || uAccLen <= 0 || uTokenLen > NAME_LENGTH - 1  || uTokenLen <= 0)
+			{
+				logclif_auth_failed(sd, 3);
 				return 0;
+			}
+
+			safestrncpy(username, accname, uAccLen + 1);
+			safestrncpy(password, token, uTokenLen + 1);
+			clienttype = RFIFOB(fd, 8);
 		}
+		else
 		{
-			int result;
-			uint32 version;
-			char username[NAME_LENGTH];
-			char password[NAME_LENGTH];
-			unsigned char passhash[16];
-			uint8 clienttype;
-			bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
-
-			// Shinryo: For the time being, just use token as password.
-			if(command == 0x0825)
-			{
-				char *accname = (char *)RFIFOP(fd, 9);
-				char *token = (char *)RFIFOP(fd, 0x5C);
-				size_t uAccLen = strlen(accname);
-				size_t uTokenLen = RFIFOREST(fd) - 0x5C;
-
-				version = RFIFOL(fd,4);
-
-				if(uAccLen > NAME_LENGTH - 1 || uAccLen <= 0 || uTokenLen > NAME_LENGTH - 1  || uTokenLen <= 0)
-				{
-					logclif_auth_failed(sd, 3);
-					return 0;
-				}
-
-				safestrncpy(username, accname, uAccLen + 1);
-				safestrncpy(password, token, uTokenLen + 1);
-				clienttype = RFIFOB(fd, 8);
-			}
-			else
-			{
-				version = RFIFOL(fd,2);
-				safestrncpy(username, (const char*)RFIFOP(fd,6), NAME_LENGTH);
-				if( israwpass )
-				{
-					safestrncpy(password, (const char*)RFIFOP(fd,30), NAME_LENGTH);
-					clienttype = RFIFOB(fd,54);
-				}
-				else
-				{
-					memcpy(passhash, RFIFOP(fd,30), 16);
-					clienttype = RFIFOB(fd,46);
-				}
-			}
-			RFIFOSKIP(fd,RFIFOREST(fd)); // assume no other packet was sent
-
-			sd->clienttype = clienttype;
-			sd->version = version;
-			safestrncpy(sd->userid, username, NAME_LENGTH);
+			version = RFIFOL(fd,2);
+			safestrncpy(username, (const char*)RFIFOP(fd,6), NAME_LENGTH);
 			if( israwpass )
 			{
-				ShowStatus("Request for connection of %s (ip: %s) version=%d\n", sd->userid, ip,sd->version);
-				safestrncpy(sd->passwd, password, NAME_LENGTH);
-				if( login_config.use_md5_passwds )
-					MD5_String(sd->passwd, sd->passwd);
-				sd->passwdenc = 0;
+				safestrncpy(password, (const char*)RFIFOP(fd,30), PASSWD_LENGHT);
+				clienttype = RFIFOB(fd,54);
 			}
 			else
 			{
-				ShowStatus("Request for connection (passwdenc mode) of %s (ip: %s) version=%d\n", sd->userid, ip,sd->version);
-				bin2hex(sd->passwd, passhash, 16); // raw binary data here!
-				sd->passwdenc = PASSWORDENC;
+				memcpy(passhash, RFIFOP(fd,30), 16);
+				clienttype = RFIFOB(fd,46);
 			}
-
-			if( sd->passwdenc != 0 && login_config.use_md5_passwds )
-			{
-				logclif_auth_failed(sd, 3); // send "rejected from server"
-				return 0;
-			}
-
-			result = login_mmo_auth(sd, false);
-
-			if( result == -1 )
-				logclif_auth_ok(sd);
-			else
-				logclif_auth_failed(sd, result);
 		}
+		RFIFOSKIP(fd,RFIFOREST(fd)); // assume no other packet was sent
+
+		sd->clienttype = clienttype;
+		sd->version = version;
+		safestrncpy(sd->userid, username, NAME_LENGTH);
+		if( israwpass )
+		{
+			ShowStatus("Request for connection of %s (ip: %s) version=%d\n", sd->userid, ip,sd->version);
+			safestrncpy(sd->passwd, password, NAME_LENGTH);
+			if( login_config.use_md5_passwds )
+				MD5_String(sd->passwd, sd->passwd);
+			sd->passwdenc = 0;
+		}
+		else
+		{
+			ShowStatus("Request for connection (passwdenc mode) of %s (ip: %s) version=%d\n", sd->userid, ip,sd->version);
+			bin2hex(sd->passwd, passhash, 16); // raw binary data here!
+			sd->passwdenc = PASSWORDENC;
+		}
+
+		if( sd->passwdenc != 0 && login_config.use_md5_passwds )
+		{
+			logclif_auth_failed(sd, 3); // send "rejected from server"
+			return 0;
+		}
+
+		result = login_mmo_auth(sd, false);
+
+		if( result == -1 )
+			logclif_auth_ok(sd);
+		else
+			logclif_auth_failed(sd, result);
+	}
 	return 1;
 }
 
+/**
+ * Client request an md5key for his session, keys will be generate and sent back
+ * @param fd: file descriptor to parse from (client)
+ * @param sd: client session
+ * @return 1 success
+ */
 static int logclif_parse_reqkey(int fd, struct login_session_data *sd){
 	RFIFOSKIP(fd,2);
 	{
@@ -366,9 +388,13 @@ static int logclif_parse_reqkey(int fd, struct login_session_data *sd){
 	return 1;
 }
 
-/*
+/**
  * Char-server request to connect to the login-server.
  * This is needed to exchange packets.
+ * @param fd: file descriptor to parse from (client)
+ * @param sd: client session
+ * @param ip: ipv4 adresse (client)
+ * @return 0 packet received too shirt, 1 success
  */
 static int logclif_parse_reqcharconnec(int fd, struct login_session_data *sd, char* ip){
 	if (RFIFOREST(fd) < 86)
@@ -437,9 +463,12 @@ static int logclif_parse_reqcharconnec(int fd, struct login_session_data *sd, ch
 	return 1;
 }
 
-//----------------------------------------------------------------------------------------
-// Default packet parsing (normal players or char-server connection requests)
-//----------------------------------------------------------------------------------------
+/**
+ * Entry point from client to log-server.
+ * Function that checks incoming command, then splits it to the correct handler.
+ * @param fd: file descriptor to parse, (link to client)
+ * @return 0=invalid session,marked for disconection,unknow packet, banned..; 1=success
+ */
 int logclif_parse(int fd) {
 	struct login_session_data* sd = (struct login_session_data*)session[fd]->session_data;
 
@@ -484,7 +513,6 @@ int logclif_parse(int fd) {
 		case 0x0200: logclif_parse_keepalive(fd); break;
 		// client md5 hash (binary)
 		case 0x0204: logclif_parse_updclhash(fd,sd); break;
-
 		// request client login (raw password)
 		case 0x0064: // S 0064 <version>.L <username>.24B <password>.24B <clienttype>.B
 		case 0x0277: // S 0277 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B
@@ -510,7 +538,10 @@ int logclif_parse(int fd) {
 }
 
 
-/*
+
+/// Constructor destructor
+
+/**
  * Initialise the module.
  * Launched at login-serv start, create db or other long scope variable here.
  */
@@ -518,8 +549,9 @@ void do_init_loginclif(void){
 	return;
 }
 
-/*
- * Handler to cleanup module, called when login-server stops.
+/**
+ * loginclif destructor
+ *  dealloc..., function called at exit of the login-serv
  */
 void do_final_loginclif(void){
 	return;

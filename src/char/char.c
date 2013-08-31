@@ -37,6 +37,20 @@
 #include <stdlib.h>
 #include <malloc.h>
 
+//definition of exported var declared in .h
+int login_fd; //login file descriptor
+int char_fd; //char file descriptor
+struct Schema_Config schema_config;
+struct CharServ_Config charserv_config;
+struct mmo_map_server server[MAX_MAP_SERVERS];
+//Custom limits for the fame lists. [Skotlex]
+int fame_list_size_chemist;
+int fame_list_size_smith;
+int fame_list_size_taekwon;
+// Char-server-side stored fame lists [DracoRPG]
+struct fame_list smith_fame_list[MAX_FAME_LIST];
+struct fame_list chemist_fame_list[MAX_FAME_LIST];
+struct fame_list taekwon_fame_list[MAX_FAME_LIST];
 
 #define CHAR_MAX_MSG 300
 static char* msg_table[CHAR_MAX_MSG]; // Login Server messages_conf
@@ -1218,7 +1232,7 @@ int char_mmo_char_fromsql(int char_id, struct mmo_charstatus* p, bool load_every
 int char_mmo_sql_init(void) {
 	char_db_= idb_alloc(DB_OPT_RELEASE_DATA);
 
-	ShowStatus("Characters per Account: '%d'.\n", char_config.char_per_account);
+	ShowStatus("Characters per Account: '%d'.\n", charserv_config.char_config.char_per_account);
 
 	//the 'set offline' part is now in check_login_conn ...
 	//if the server connects to loginserver
@@ -1305,19 +1319,19 @@ int char_check_char_name(char * name, char * esc_name)
 		return -1; // nick reserved for internal server messages
 
 	// Check Authorised letters/symbols in the name of the character
-	if( charserv_config.char_name_option == 1 )
+	if( charserv_config.char_config.char_name_option == 1 )
 	{ // only letters/symbols in char_name_letters are authorised
 		for( i = 0; i < NAME_LENGTH && name[i]; i++ )
-			if( strchr(charserv_config.char_name_letters, name[i]) == NULL )
+			if( strchr(charserv_config.char_config.char_name_letters, name[i]) == NULL )
 				return -2;
 	}
-	else if( charserv_config.char_name_option == 2 )
+	else if( charserv_config.char_config.char_name_option == 2 )
 	{ // letters/symbols in char_name_letters are forbidden
 		for( i = 0; i < NAME_LENGTH && name[i]; i++ )
-			if( strchr(charserv_config.char_name_letters, name[i]) != NULL )
+			if( strchr(charserv_config.char_config.char_name_letters, name[i]) != NULL )
 				return -2;
 	}
-	if( charserv_config.name_ignoring_case ) {
+	if( charserv_config.char_config.name_ignoring_case ) {
 		if( SQL_ERROR == Sql_Query(sql_handle, "SELECT 1 FROM `%s` WHERE BINARY `name` = '%s' LIMIT 1", schema_config.char_db, esc_name) ) {
 			Sql_ShowDebug(sql_handle);
 			return -2;
@@ -1371,10 +1385,10 @@ int char_make_new_char_sql(struct char_session_data* sd, char* name_, int str, i
 #endif
 
 	// check the number of already existing chars in this account
-	if( char_config.char_per_account != 0 ) {
+	if( charserv_config.char_config.char_per_account != 0 ) {
 		if( SQL_ERROR == Sql_Query(sql_handle, "SELECT 1 FROM `%s` WHERE `account_id` = '%d'", schema_config.char_db, sd->account_id) )
 			Sql_ShowDebug(sql_handle);
-		if( Sql_NumRows(sql_handle) >= char_config.char_per_account )
+		if( Sql_NumRows(sql_handle) >= charserv_config.char_config.char_per_account )
 			return -2; // character account limit exceeded
 	}
 
@@ -1479,8 +1493,8 @@ int char_delete_char_sql(int char_id){
 
 	//check for config char del condition [Lupus]
 	// TODO: Move this out to packet processing (0x68/0x1fb).
-	if( ( char_config.char_del_level > 0 && base_level >= char_config.char_del_level )
-	 || ( char_config.char_del_level < 0 && base_level <= -char_config.char_del_level )
+	if( ( charserv_config.char_config.char_del_level > 0 && base_level >= charserv_config.char_config.char_del_level )
+	 || ( charserv_config.char_config.char_del_level < 0 && base_level <= -charserv_config.char_config.char_del_level )
 	) {
 			ShowInfo("Char deletion aborted: %s, BaseLevel: %i\n", name, base_level);
 			return -1;
@@ -1688,9 +1702,9 @@ int char_mmo_char_tobuf(uint8* buffer, struct mmo_charstatus* p)
 #if PACKETVER != 20111116 //2011-11-16 wants 136, ask gravity.
 	#if PACKETVER >= 20110928
 		// change slot feature (0 = disabled, otherwise enabled)
-		if( (charmove_config.char_move_enabled)==0 )
+		if( (charserv_config.charmove_config.char_move_enabled)==0 )
 			WBUFL(buf,132) = 0;
-		else if( charmove_config.char_moves_unlimited )
+		else if( charserv_config.charmove_config.char_moves_unlimited )
 			WBUFL(buf,132) = 1;
 		else
 			WBUFL(buf,132) = max( 0, (int)p->character_moves );
@@ -1893,7 +1907,7 @@ int char_loadName(int char_id, char* name){
 	}
 	else
 	{
-		safestrncpy(name, charserv_config.unknown_char_name, NAME_LENGTH);
+		safestrncpy(name, charserv_config.char_config.unknown_char_name, NAME_LENGTH);
 	}
 	return 0;
 }
@@ -1984,7 +1998,8 @@ int char_pincode_compare( int fd, struct char_session_data* sd, char* pin ){
 	}else{
 		chclif_pincode_sendstate( fd, sd, PINCODE_WRONG );
 
-		if( pincode_config.pincode_maxtry && ++sd->pincode_try >= pincode_config.pincode_maxtry ){
+		if( charserv_config.pincode_config.pincode_maxtry
+		&& ++sd->pincode_try >= charserv_config.pincode_config.pincode_maxtry ){
 			chlogif_pincode_notifyLoginPinError( sd->account_id );
 		}
 
@@ -2206,18 +2221,18 @@ void char_set_default_sql(){
 
 //set default config
 void char_set_defaults(){
-	pincode_config.pincode_enabled = true;
-	pincode_config.pincode_changetime = 0;
-	pincode_config.pincode_maxtry = 3;
-	pincode_config.pincode_force = true;
+	charserv_config.pincode_config.pincode_enabled = true;
+	charserv_config.pincode_config.pincode_changetime = 0;
+	charserv_config.pincode_config.pincode_maxtry = 3;
+	charserv_config.pincode_config.pincode_force = true;
 
-	charmove_config.char_move_enabled = true;
-	charmove_config.char_movetoused = true;
-	charmove_config.char_moves_unlimited = false;
+	charserv_config.charmove_config.char_move_enabled = true;
+	charserv_config.charmove_config.char_movetoused = true;
+	charserv_config.charmove_config.char_moves_unlimited = false;
 
-	char_config.char_per_account = 0; //Maximum chars per account (default unlimited) [Sirius]
-	char_config.char_del_level = 0; //From which level u can delete character [Lupus]
-	char_config.char_del_delay = 86400;
+	charserv_config.char_config.char_per_account = 0; //Maximum chars per account (default unlimited) [Sirius]
+	charserv_config.char_config.char_del_level = 0; //From which level u can delete character [Lupus]
+	charserv_config.char_config.char_del_delay = 86400;
 
 //	charserv_config.userid[24];
 //	charserv_config.passwd[24];
@@ -2235,10 +2250,10 @@ void char_set_defaults(){
 	charserv_config.char_new = true;
 	charserv_config.char_new_display = 0;
 
-	charserv_config.name_ignoring_case = false; // Allow or not identical name for characters but with a different case by [Yor]
-	charserv_config.char_name_option = 0; // Option to know which letters/symbols are authorised in the name of a character (0: all, 1: only those in char_name_letters, 2: all EXCEPT those in char_name_letters) by [Yor]
-	safestrncpy(charserv_config.unknown_char_name,"Unknown",sizeof(charserv_config.unknown_char_name)); // Name to use when the requested name cannot be determined
-	safestrncpy(charserv_config.char_name_letters,"",sizeof(charserv_config.char_name_letters)); // list of letters/symbols allowed (or not) in a character name. by [Yor]
+	charserv_config.char_config.name_ignoring_case = false; // Allow or not identical name for characters but with a different case by [Yor]
+	charserv_config.char_config.char_name_option = 0; // Option to know which letters/symbols are authorised in the name of a character (0: all, 1: only those in char_name_letters, 2: all EXCEPT those in char_name_letters) by [Yor]
+	safestrncpy(charserv_config.char_config.unknown_char_name,"Unknown",sizeof(charserv_config.char_config.unknown_char_name)); // Name to use when the requested name cannot be determined
+	safestrncpy(charserv_config.char_config.char_name_letters,"",sizeof(charserv_config.char_config.char_name_letters)); // list of letters/symbols allowed (or not) in a character name. by [Yor]
 
 	charserv_config.save_log = 1; // show loading/saving messages
 	charserv_config.log_char = 1;	// loggin char or not [devil]
@@ -2376,25 +2391,25 @@ int char_config_read(const char* cfgName){
 		} else if(strcmpi(w1,"log_char")==0) {		//log char or not [devil]
 			charserv_config.log_char = atoi(w2);
 		} else if (strcmpi(w1, "unknown_char_name") == 0) {
-			safestrncpy(charserv_config.unknown_char_name, w2, sizeof(charserv_config.unknown_char_name));
-			charserv_config.unknown_char_name[NAME_LENGTH-1] = '\0';
+			safestrncpy(charserv_config.char_config.unknown_char_name, w2, sizeof(charserv_config.char_config.unknown_char_name));
+			charserv_config.char_config.unknown_char_name[NAME_LENGTH-1] = '\0';
 		} else if (strcmpi(w1, "name_ignoring_case") == 0) {
-			charserv_config.name_ignoring_case = (bool)config_switch(w2);
+			charserv_config.char_config.name_ignoring_case = (bool)config_switch(w2);
 		} else if (strcmpi(w1, "char_name_option") == 0) {
-			charserv_config.char_name_option = atoi(w2);
+			charserv_config.char_config.char_name_option = atoi(w2);
 		} else if (strcmpi(w1, "char_name_letters") == 0) {
-			safestrncpy(charserv_config.char_name_letters, w2, sizeof(charserv_config.char_name_letters));
+			safestrncpy(charserv_config.char_config.char_name_letters, w2, sizeof(charserv_config.char_config.char_name_letters));
 		} else if (strcmpi(w1, "chars_per_account") == 0) { //maxchars per account [Sirius]
-			char_config.char_per_account = atoi(w2);
-			if( char_config.char_per_account == 0 || char_config.char_per_account > MAX_CHARS ) {
-				if( char_config.char_per_account > MAX_CHARS )
-					ShowWarning("Max chars per account '%d' exceeded limit. Defaulting to '%d'.\n", char_config.char_per_account, MAX_CHARS);
-				char_config.char_per_account = MAX_CHARS;
+			charserv_config.char_config.char_per_account = atoi(w2);
+			if( charserv_config.char_config.char_per_account == 0 || charserv_config.char_config.char_per_account > MAX_CHARS ) {
+				if( charserv_config.char_config.char_per_account > MAX_CHARS )
+					ShowWarning("Max chars per account '%d' exceeded limit. Defaulting to '%d'.\n", charserv_config.char_config.char_per_account, MAX_CHARS);
+				charserv_config.char_config.char_per_account = MAX_CHARS;
 			}
 		} else if (strcmpi(w1, "char_del_level") == 0) { //disable/enable char deletion by its level condition [Lupus]
-			char_config.char_del_level = atoi(w2);
+			charserv_config.char_config.char_del_level = atoi(w2);
 		} else if (strcmpi(w1, "char_del_delay") == 0) {
-			char_config.char_del_delay = atoi(w2);
+			charserv_config.char_config.char_del_delay = atoi(w2);
 		} else if(strcmpi(w1,"db_path")==0) {
 			safestrncpy(schema_config.db_path, w2, sizeof(schema_config.db_path));
 		} else if (strcmpi(w1, "console") == 0) {
@@ -2420,7 +2435,7 @@ int char_config_read(const char* cfgName){
 		} else if (strcmpi(w1, "guild_exp_rate") == 0) {
 			charserv_config.guild_exp_rate = atoi(w2);
 		} else if (strcmpi(w1, "pincode_enabled") == 0) {
-			pincode_config.pincode_enabled = config_switch(w2);
+			charserv_config.pincode_config.pincode_enabled = config_switch(w2);
 			#if PACKETVER < 20110309
 			if( pincode_config.pincode_enabled ) {
 				ShowWarning("pincode_enabled requires PACKETVER 20110309 or higher. Disabling...\n");
@@ -2428,17 +2443,17 @@ int char_config_read(const char* cfgName){
 			}
 			#endif
 		} else if (strcmpi(w1, "pincode_changetime") == 0) {
-			pincode_config.pincode_changetime = atoi(w2)*60*60*24;
+			charserv_config.pincode_config.pincode_changetime = atoi(w2)*60*60*24;
 		} else if (strcmpi(w1, "pincode_maxtry") == 0) {
-			pincode_config.pincode_maxtry = atoi(w2);
+			charserv_config.pincode_config.pincode_maxtry = atoi(w2);
 		} else if (strcmpi(w1, "pincode_force") == 0) {
-			pincode_config.pincode_force = config_switch(w2);
+			charserv_config.pincode_config.pincode_force = config_switch(w2);
 		} else if (strcmpi(w1, "char_move_enabled") == 0) {
-			charmove_config.char_move_enabled = config_switch(w2);
+			charserv_config.charmove_config.char_move_enabled = config_switch(w2);
 		} else if (strcmpi(w1, "char_movetoused") == 0) {
-			charmove_config.char_movetoused = config_switch(w2);
+			charserv_config.charmove_config.char_movetoused = config_switch(w2);
 		} else if (strcmpi(w1, "char_moves_unlimited") == 0) {
-			charmove_config.char_moves_unlimited = config_switch(w2);
+			charserv_config.charmove_config.char_moves_unlimited = config_switch(w2);
 		} else if (strcmpi(w1, "import") == 0) {
 			char_config_read(w2);
 		}

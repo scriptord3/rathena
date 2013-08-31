@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+//early declaration
 void logchrif_on_disconnect(int id);
 
 /**
@@ -519,7 +520,8 @@ int logchrif_parse_requnbanacc(int fd, int id, char* ip){
 }
 
 /**
- * Set account_id to online. [Wizputer]
+ * Set account_id to online.
+ * @author [Wizputer]
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
  * @return 0 not enough info transmitted, 1 success
@@ -533,7 +535,8 @@ int logchrif_parse_setacconline(int fd, int id){
 }
 
 /**
- * Set account_id to offline. [Wizputer]
+ * Set account_id to offline.
+ * @author  [Wizputer]
  * @param fd: fd to parse from (char-serv)
  * @return 0 not enough info transmitted, 1 success
  */
@@ -546,7 +549,8 @@ int logchrif_parse_setaccoffline(int fd){
 }
 
 /**
- * Receive list of all online accounts. [Skotlex]
+ * Receive list of all online accounts.
+ * @author  [Skotlex]
  * @param fd: fd to parse from (char-serv)
  * @param id: id of char-serv
  * @return 0 not enough info transmitted, 1 success

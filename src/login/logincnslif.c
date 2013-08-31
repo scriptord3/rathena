@@ -13,6 +13,7 @@
 #include "../common/ers.h"
 #include "../common/cli.h"
 #include "../common/timer.h"
+#include "../common/strlib.h"
 #include "login.h"
 #include "logincnslif.h"
 
@@ -20,10 +21,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-/*======================================================
+/**
  * Login-server console help: starting option info.
- * Do not rename function used as extern.
- *------------------------------------------------------*/
+ *  Do not rename function used as extern.
+ * @param do_exit: terminate program execution ?
+ */
 void display_helpscreen(bool do_exit) {
 	ShowInfo("Usage: %s [options]\n", SERVER_NAME);
 	ShowInfo("\n");
@@ -38,12 +40,14 @@ void display_helpscreen(bool do_exit) {
 		exit(EXIT_SUCCESS);
 }
 
-/*
+/**
  * Read the option specified in command line
- * and assign the confs used by the different server.
- * Exit on failure or return true.
+ *  and assign the confs used by the different server.
+ * @param argc:
+ * @param argv:
+ * @return true or Exit on failure.
  */
-int logcnsl_get_options(int argc, char ** argv) {
+int logcnslif_get_options(int argc, char ** argv) {
 	int i = 0;
 	for (i = 1; i < argc; i++) {
 		const char* arg = argv[i];
@@ -58,21 +62,17 @@ int logcnsl_get_options(int argc, char ** argv) {
 				display_helpscreen(true);
 			} else if (strcmp(arg, "version") == 0) {
 				display_versionscreen(true);
-			} else if (strcmp(arg, "run-once") == 0) // close the map-server as soon as its done.. for testing [Celest]
-			{
+			} else if (strcmp(arg, "run-once") == 0){ // close the map-server as soon as its done.. for testing [Celest]
 				runflag = CORE_ST_STOP;
 			} else if (SERVER_TYPE & (ATHENA_SERVER_LOGIN)) { //login
 				if (strcmp(arg, "lan-config") == 0) {
-					if (opt_has_next_value(arg, i, argc))
-						LAN_CONF_NAME = argv[++i];
+					if (opt_has_next_value(arg, i, argc)) safestrncpy(login_config.lanconf_name, argv[++i], sizeof(login_config.lanconf_name));
 				}
 				if (strcmp(arg, "login-config") == 0) {
-					if (opt_has_next_value(arg, i, argc))
-						LOGIN_CONF_NAME = argv[++i];
+					if (opt_has_next_value(arg, i, argc)) safestrncpy(login_config.loginconf_name, argv[++i], sizeof(login_config.loginconf_name));
 				}
 				if (strcmp(arg, "msg-config") == 0) {
-					if (opt_has_next_value(arg, i, argc))
-					MSG_CONF_NAME_EN = argv[++i];
+					if (opt_has_next_value(arg, i, argc)) safestrncpy(login_config.msgconf_name, argv[++i], sizeof(login_config.msgconf_name));
 				} else {
 					ShowError("Unknown option '%s'.\n", argv[i]);
 					exit(EXIT_FAILURE);
@@ -94,10 +94,14 @@ int logcnsl_get_options(int argc, char ** argv) {
 	return 1;
 }
 
-//-----------------------
-// Console Command Parser [Wizputer]
-// note common name for all serv do not rename (extern in cli)
-//-----------------------
+/**
+ * Console Command Parser
+ * Transmited from command cli.c
+ * note common name for all serv do not rename (extern in cli)
+ * @author [Wizputer]
+ * @param buf: buffer to parse, (from console)
+ * @return 1=success
+ */
 int cnslif_parse(const char* buf){
 	char type[64];
 	char command[64];
@@ -150,10 +154,10 @@ int cnslif_parse(const char* buf){
 		ShowInfo("\t ers_report => Displays database usage.\n");
 		ShowInfo("\t create:<username> <password> <sex:M|F> => Creates a new account.\n");
 	}
-	return 0;
+	return 1;
 }
 
-/*
+/**
  * Initialise the module.
  * Launched at login-serv start, create db or other long scope variable here.
  */
@@ -164,7 +168,7 @@ void do_init_logincnslif(void){
 	}
 }
 
-/*
+/**
  * Handler to cleanup module, called when login-server stops.
  */
 void do_final_logincnslif(void){

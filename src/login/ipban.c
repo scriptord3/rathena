@@ -1,5 +1,12 @@
-// Copyright (c) Athena Dev Teams - Licensed under GNU GPL
-// For more information, see LICENCE in the main folder
+/**
+ * @file ipban.c
+ * Module purpose is to read configuration for login-server and handle accounts,
+ *  and also to synchronize all login interfaces: loginchrif, loginclif, logincnslif.
+ * Licensed under GNU GPL.
+ *  For more information, see LICENCE in the main folder.
+ * @author Athena Dev Teams < r15k
+ * @author rAthena Dev Team
+ */
 
 #include "../common/cbasetypes.h"
 #include "../common/db.h"
@@ -35,82 +42,90 @@ static Sql* sql_handle = NULL;
 static int cleanup_timer_id = INVALID_TIMER;
 static bool ipban_inited = false;
 
+//early declaration
 int ipban_cleanup(int tid, unsigned int tick, int id, intptr_t data);
 
-
-// initialize
-void ipban_init(void)
-{
-	const char* username;
-	const char* password;
-	const char* hostname;
-	uint16      port;
-	const char* database;
-	const char* codepage;
-
-	ipban_inited = true;
+/**
+ * Check if ip is in active bans list
+ * @param ip: ipv4 ip to check if ban
+ * @return true found or error, false not in list
+ */
+bool ipban_check(uint32 ip) {
+	uint8* p = (uint8*)&ip;
+	char* data = NULL;
+	int matches;
 
 	if( !login_config.ipban )
-		return;// ipban disabled
+		return false;// ipban disabled
 
-	if( ipban_db_hostname[0] != '\0' )
-	{// local settings
-		username = ipban_db_username;
-		password = ipban_db_password;
-		hostname = ipban_db_hostname;
-		port     = ipban_db_port;
-		database = ipban_db_database;
-		codepage = ipban_codepage;
-	}
-	else
-	{// global settings
-		username = global_db_username;
-		password = global_db_password;
-		hostname = global_db_hostname;
-		port     = global_db_port;
-		database = global_db_database;
-		codepage = global_codepage;
-	}
-
-	// establish connections
-	sql_handle = Sql_Malloc();
-	if( SQL_ERROR == Sql_Connect(sql_handle, username, password, hostname, port, database) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT count(*) FROM `%s` WHERE `rtime` > NOW() AND (`list` = '%u.*.*.*' OR `list` = '%u.%u.*.*' OR `list` = '%u.%u.%u.*' OR `list` = '%u.%u.%u.%u')",
+		ipban_table, p[3], p[3], p[2], p[3], p[2], p[1], p[3], p[2], p[1], p[0]) )
 	{
 		Sql_ShowDebug(sql_handle);
-		Sql_Free(sql_handle);
-		exit(EXIT_FAILURE);
+		// close connection because we can't verify their connectivity.
+		return true;
 	}
-	if( codepage[0] != '\0' && SQL_ERROR == Sql_SetEncoding(sql_handle, codepage) )
-		Sql_ShowDebug(sql_handle);
 
-	if( login_config.ipban_cleanup_interval > 0 )
-	{ // set up periodic cleanup of connection history and active bans
-		add_timer_func_list(ipban_cleanup, "ipban_cleanup");
-		cleanup_timer_id = add_timer_interval(gettick()+10, ipban_cleanup, 0, 0, login_config.ipban_cleanup_interval*1000);
-	} else // make sure it gets cleaned up on login-server start regardless of interval-based cleanups
-		ipban_cleanup(0,0,0,0);
+	if( SQL_ERROR == Sql_NextRow(sql_handle) )
+		return true;// Shouldn't happen, but just in case...
+
+	Sql_GetData(sql_handle, 0, &data, NULL);
+	matches = atoi(data);
+	Sql_FreeResult(sql_handle);
+
+	return( matches > 0 );
 }
 
-// finalize
-void ipban_final(void)
-{
+/**
+ * Log failed attempt
+ *  Also ban user if too much fail attemp is made
+ * @param ip: ipv4 ip to record the failure
+ */
+void ipban_log(uint32 ip) {
+	unsigned long failures;
+
 	if( !login_config.ipban )
 		return;// ipban disabled
 
-	if( login_config.ipban_cleanup_interval > 0 )
-		// release data
-		delete_timer(cleanup_timer_id, ipban_cleanup);
+	failures = loginlog_failedattempts(ip, login_config.dynamic_pass_failure_ban_interval);// how many times failed account? in one ip.
 
-	ipban_cleanup(0,0,0,0); // always clean up on login-server stop
-
-	// close connections
-	Sql_Free(sql_handle);
-	sql_handle = NULL;
+	// if over the limit, add a temporary ban entry
+	if( failures >= login_config.dynamic_pass_failure_ban_limit )
+	{
+		uint8* p = (uint8*)&ip;
+		if( SQL_ERROR == Sql_Query(sql_handle, "INSERT INTO `%s`(`list`,`btime`,`rtime`,`reason`) VALUES ('%u.%u.%u.*', NOW() , NOW() +  INTERVAL %d MINUTE ,'Password error ban')",
+			ipban_table, p[3], p[2], p[1], login_config.dynamic_pass_failure_ban_duration) )
+			Sql_ShowDebug(sql_handle);
+	}
 }
 
-// load configuration options
-bool ipban_config_read(const char* key, const char* value)
-{
+/**
+ * Timered function to Remove expired bans.
+ *  Requesting all char to update their registered ip and transmit their new ip.
+ *  Performed each ip_sync_interval.
+ * @param tid: timer id
+ * @param tick: tick of execution
+ * @param id: unused
+ * @param data: unused
+ * @return 0
+ */
+int ipban_cleanup(int tid, unsigned int tick, int id, intptr_t data) {
+	if( !login_config.ipban )
+		return 0;// ipban disabled
+
+	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `ipbanlist` WHERE `rtime` <= NOW()") )
+		Sql_ShowDebug(sql_handle);
+
+	return 0;
+}
+
+/**
+ * Read configuration options
+ * @param key: config keyword
+ * @param value: config value for keyword
+ * @return true success, false config not complete or serv already running
+ */
+bool ipban_config_read(const char* key, const char* value) {
 	const char* signature;
 
 	if( ipban_inited )
@@ -197,62 +212,79 @@ bool ipban_config_read(const char* key, const char* value)
 	return false;// not found
 }
 
-// check ip against active bans list
-bool ipban_check(uint32 ip)
-{
-	uint8* p = (uint8*)&ip;
-	char* data = NULL;
-	int matches;
 
-	if( !login_config.ipban )
-		return false;// ipban disabled
+/// Constructor destructor
 
-	if( SQL_ERROR == Sql_Query(sql_handle, "SELECT count(*) FROM `%s` WHERE `rtime` > NOW() AND (`list` = '%u.*.*.*' OR `list` = '%u.%u.*.*' OR `list` = '%u.%u.%u.*' OR `list` = '%u.%u.%u.%u')",
-		ipban_table, p[3], p[3], p[2], p[3], p[2], p[1], p[3], p[2], p[1], p[0]) )
-	{
-		Sql_ShowDebug(sql_handle);
-		// close connection because we can't verify their connectivity.
-		return true;
-	}
+/**
+ * Initialise the module.
+ * Launched at login-serv start, create db or other long scope variable here.
+ */
+void ipban_init(void) {
+	const char* username;
+	const char* password;
+	const char* hostname;
+	uint16      port;
+	const char* database;
+	const char* codepage;
 
-	if( SQL_ERROR == Sql_NextRow(sql_handle) )
-		return true;// Shouldn't happen, but just in case...
-
-	Sql_GetData(sql_handle, 0, &data, NULL);
-	matches = atoi(data);
-	Sql_FreeResult(sql_handle);
-
-	return( matches > 0 );
-}
-
-// log failed attempt
-void ipban_log(uint32 ip)
-{
-	unsigned long failures;
+	ipban_inited = true;
 
 	if( !login_config.ipban )
 		return;// ipban disabled
 
-	failures = loginlog_failedattempts(ip, login_config.dynamic_pass_failure_ban_interval);// how many times failed account? in one ip.
-
-	// if over the limit, add a temporary ban entry
-	if( failures >= login_config.dynamic_pass_failure_ban_limit )
-	{
-		uint8* p = (uint8*)&ip;
-		if( SQL_ERROR == Sql_Query(sql_handle, "INSERT INTO `%s`(`list`,`btime`,`rtime`,`reason`) VALUES ('%u.%u.%u.*', NOW() , NOW() +  INTERVAL %d MINUTE ,'Password error ban')",
-			ipban_table, p[3], p[2], p[1], login_config.dynamic_pass_failure_ban_duration) )
-			Sql_ShowDebug(sql_handle);
+	if( ipban_db_hostname[0] != '\0' )
+	{// local settings
+		username = ipban_db_username;
+		password = ipban_db_password;
+		hostname = ipban_db_hostname;
+		port     = ipban_db_port;
+		database = ipban_db_database;
+		codepage = ipban_codepage;
 	}
-}
+	else
+	{// global settings
+		username = global_db_username;
+		password = global_db_password;
+		hostname = global_db_hostname;
+		port     = global_db_port;
+		database = global_db_database;
+		codepage = global_codepage;
+	}
 
-// remove expired bans
-int ipban_cleanup(int tid, unsigned int tick, int id, intptr_t data)
-{
-	if( !login_config.ipban )
-		return 0;// ipban disabled
-
-	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `ipbanlist` WHERE `rtime` <= NOW()") )
+	// establish connections
+	sql_handle = Sql_Malloc();
+	if( SQL_ERROR == Sql_Connect(sql_handle, username, password, hostname, port, database) )
+	{
+		Sql_ShowDebug(sql_handle);
+		Sql_Free(sql_handle);
+		exit(EXIT_FAILURE);
+	}
+	if( codepage[0] != '\0' && SQL_ERROR == Sql_SetEncoding(sql_handle, codepage) )
 		Sql_ShowDebug(sql_handle);
 
-	return 0;
+	if( login_config.ipban_cleanup_interval > 0 )
+	{ // set up periodic cleanup of connection history and active bans
+		add_timer_func_list(ipban_cleanup, "ipban_cleanup");
+		cleanup_timer_id = add_timer_interval(gettick()+10, ipban_cleanup, 0, 0, login_config.ipban_cleanup_interval*1000);
+	} else // make sure it gets cleaned up on login-server start regardless of interval-based cleanups
+		ipban_cleanup(0,0,0,0);
+}
+
+/**
+ * Destroy the module.
+ * Launched at login-serv end, cleanup db connection or other thing here
+ */
+void ipban_final(void) {
+	if( !login_config.ipban )
+		return;// ipban disabled
+
+	if( login_config.ipban_cleanup_interval > 0 )
+		// release data
+		delete_timer(cleanup_timer_id, ipban_cleanup);
+
+	ipban_cleanup(0,0,0,0); // always clean up on login-server stop
+
+	// close connections
+	Sql_Free(sql_handle);
+	sql_handle = NULL;
 }

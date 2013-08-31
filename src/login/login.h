@@ -30,7 +30,7 @@ struct login_session_data {
 	char sex;// 'F','M','S'
 
 	char userid[NAME_LENGTH];
-	char passwd[32+1]; // 23+1 for plaintext, 32+1 for md5-ed passwords
+	char passwd[PASSWD_LENGHT]; // 23+1 for plaintext, 32+1 for md5-ed passwords
 	int passwdenc;
 	char md5key[20];
 	uint16 md5keylen;
@@ -55,11 +55,12 @@ struct mmo_char_server {
 	uint16 users;		// user count on this server
 	uint16 type;		// 0=normal, 1=maintenance, 2=over 18, 3=paying, 4=P2P
 	uint16 new_;		// should display as 'new'?
-} server[MAX_SERVERS]; // char server data
+}; // char server data
+extern struct mmo_char_server server[MAX_SERVERS];
 
 struct client_hash_node {
-	int group_id;
-	uint8 hash[16];
+	int group_id;				//inferior or egal group to apply restriction
+	uint8 hash[16];				//hash required
 	struct client_hash_node *next;
 };
 
@@ -93,10 +94,11 @@ struct Login_Config {
 
 	int client_hash_check;					// flags for checking client md5
 	struct client_hash_node *client_hash_nodes;		// linked list containg md5 hash for each gm group
-	char *loginconf_name;					//name of main config file
-	char *msgconf_name;					//name of msg_conf config file
-	char *lanconf_name;					//name of lan config file
-} login_config;
+	char loginconf_name[256];				//name of main config file
+	char msgconf_name[256];					//name of msg_conf config file
+	char lanconf_name[256];					//name of lan config file
+};
+extern struct Login_Config login_config;
 
 #define sex_num2str(num) ( (num ==  SEX_FEMALE  ) ? 'F' : (num ==  SEX_MALE  ) ? 'M' : 'S' )
 #define sex_str2num(str) ( (str == 'F' ) ?  SEX_FEMALE  : (str == 'M' ) ?  SEX_MALE  :  SEX_SERVER  )
@@ -108,19 +110,15 @@ int login_msg_config_read(char *cfgName);
 const char* login_msg_txt(int msg_number);
 void login_do_final_msg(void);
 
-//-----------------------------------------------------
-// Online User Database [Wizputer]
-//-----------------------------------------------------
+/// Online User Database [Wizputer]
 struct online_login_data {
 	int account_id;
 	int waiting_disconnect;
 	int char_server;
 };
-DBMap* online_db; // int account_id -> struct online_login_data*
+extern DBMap* online_db; // int account_id -> struct online_login_data*
 
-//-----------------------------------------------------
-// Auth database
-//-----------------------------------------------------
+/// Auth database
 #define AUTH_TIMEOUT 30000
 struct auth_node {
 	int account_id;
@@ -131,24 +129,96 @@ struct auth_node {
 	uint32 version;
 	uint8 clienttype;
 };
-DBMap* auth_db; // int account_id -> struct auth_node*
+extern DBMap* auth_db; // int account_id -> struct auth_node*
 
-
+///Accessors
 AccountDB* login_get_accounts_db(void);
 
-
-bool login_check_encrypted(const char* str1, const char* str2, const char* passwd);
-bool login_check_password(const char* md5key, int passwdenc, const char* passwd, const char* refpass);
-
-int login_waiting_disconnect_timer(int tid, unsigned int tick, int id, intptr_t data);
-void login_remove_online_user(int account_id);
-struct online_login_data* login_add_online_user(int char_server, int account_id);
-int lan_subnetcheck(uint32 ip);
-
-int login_online_db_setoffline(DBKey key, DBData *data, va_list ap);
+/**
+ * Sub function to create an online_login_data and save it to db.
+ * @param key: Key of the database entry
+ * @param ap: args
+ * @return : Data identified by the key to be put in the database
+ * @see DBCreateData
+ */
 DBData login_create_online_user(DBKey key, va_list args);
 
+/**
+ * Function to add a user in online_db.
+ *  Checking if the user is already registered in the db.
+ *  Stop disconnection timer if set.
+ * @param char_server: id of char-serv on wich the player is
+ * @param account_id: the account identifier
+ * @return the new|registered online data
+ */
+struct online_login_data* login_add_online_user(int char_server, int account_id);
+
+/**
+ * Function to remove a user from online_db.
+ *  Checking if user was already scheduled for deletion, and remove that timer if found.
+ * @param account_id: the account identifier
+ */
+void login_remove_online_user(int account_id);
+
+/**
+ * Timered function to disconnect a user from login.
+ *  This is done either after auth_ok or kicked by char-server.
+ *  Removing user from auth_db and online_db.
+ *  Delay is AUTH_TIMEOUT by default.
+ * @param tid: timer id
+ * @param tick: tick of execution
+ * @param id: user account id
+ * @param data: unused
+ * @return :0
+ */
+int login_waiting_disconnect_timer(int tid, unsigned int tick, int id, intptr_t data);
+
+/**
+ * Sub function to apply on online_db.
+ * Mark a character as offline.
+ * @param data: 1 entry in the db
+ * @param ap: args
+ * @return : Value to be added up by the function that is applying this
+ * @see DBApply
+ */
+int login_online_db_setoffline(DBKey key, DBData *data, va_list ap);
+
+/**
+ * Test to determine if an IP come from LAN or WAN.
+ * @param ip: ip to check if in auth network
+ * @return 0 if from wan, or subnet_char_ip if lan
+ */
+int lan_subnetcheck(uint32 ip);
+
+
+/**
+ * Create a new account and save it in db/sql.
+ * @param userid: string for user login
+ * @param pass: string for user pass
+ * @param sex: should be M|F|S (todo make an enum ?)
+ * @param last_ip:
+ * @return :
+ *	-1: success
+ *	0: unregistered id (wrong sex fail to create in db);
+ *	1: incorrect pass or userid (userid|pass too short or already exist);
+ *	3: registration limit exceeded;
+ */
 int login_mmo_auth_new(const char* userid, const char* pass, const char sex, const char* last_ip);
+
+/**
+ * Check/authentication of a connection.
+ * @param sd: string (atm:md5key or dbpass)
+ * @param isServer: string (atm:md5key or dbpass)
+ * @return :
+ *	-1: success
+ *	0: unregistered id;
+ *	1: incorrect pass;
+ *	2: expired id
+ *	3: blacklisted (or registration limit exceeded if new acc);
+ *	5: invalid client_version|hash;
+ *	6: banned
+ *	x: acc state (TODO document me deeper)
+ */
 int login_mmo_auth(struct login_session_data* sd, bool isServer);
 
 #endif /* _LOGIN_H_ */

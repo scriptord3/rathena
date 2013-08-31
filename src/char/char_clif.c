@@ -50,7 +50,8 @@ int chclif_parse_moveCharSlot( int fd, struct char_session_data* sd){
 	RFIFOSKIP(fd,8);
 
 	// Have we changed to often or is it disabled?
-	if( (charmove_config.char_move_enabled)==0 || ( (charmove_config.char_moves_unlimited)==0 && sd->char_moves[from] <= 0 ) ){
+	if( (charserv_config.charmove_config.char_move_enabled)==0
+	|| ( (charserv_config.charmove_config.char_moves_unlimited)==0 && sd->char_moves[from] <= 0 ) ){
 		chclif_moveCharSlotReply( fd, sd, from, 1 );
 		return 0;
 	}
@@ -63,7 +64,7 @@ int chclif_parse_moveCharSlot( int fd, struct char_session_data* sd){
 
 	if( sd->found_char[to] > 0 ){
 		// We want to move to a used position
-		if( charmove_config.char_movetoused ){ // TODO: check if the target is in deletion process
+		if( charserv_config.charmove_config.char_movetoused ){ // TODO: check if the target is in deletion process
 			// Admin is friendly and uses triangle exchange
 			if( SQL_ERROR == Sql_QueryStr(sql_handle, "START TRANSACTION")
 				|| SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `char_num`='%d' WHERE `char_id` = '%d'",schema_config.char_db, to, sd->found_char[from] )
@@ -86,7 +87,7 @@ int chclif_parse_moveCharSlot( int fd, struct char_session_data* sd){
 		return 0;
 	}
 
-	if( (charmove_config.char_moves_unlimited)==0 ){
+	if( (charserv_config.charmove_config.char_moves_unlimited)==0 ){
 		sd->char_moves[from]--;
 		Sql_Query(sql_handle, "UPDATE `%s` SET `moves`='%d' WHERE `char_id`='%d'", schema_config.char_db, sd->char_moves[from], sd->found_char[from] );
 	}
@@ -125,7 +126,7 @@ void chclif_pincode_sendstate( int fd, struct char_session_data* sd, enum pincod
 int chclif_parse_reqpincode_window(int fd, struct char_session_data* sd){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
-	if( pincode_config.pincode_enabled && RFIFOL(fd,2) == sd->account_id ){
+	if( charserv_config.pincode_config.pincode_enabled && RFIFOL(fd,2) == sd->account_id ){
 		if( strlen( sd->pincode ) <= 0 ){
 			chclif_pincode_sendstate( fd, sd, PINCODE_NEW );
 		}else{
@@ -144,7 +145,7 @@ int chclif_parse_pincode_check( int fd, struct char_session_data* sd ){
 
 	if( RFIFOREST(fd) < 10 )
 		return 0;
-	if( pincode_config.pincode_enabled==0 || RFIFOL(fd,2) != sd->account_id )
+	if( charserv_config.pincode_config.pincode_enabled==0 || RFIFOL(fd,2) != sd->account_id )
 		return 0;
 
 	memset(pin,0,PINCODE_LENGTH+1);
@@ -167,7 +168,7 @@ int chclif_parse_pincode_change( int fd, struct char_session_data* sd ){
 
 	if( RFIFOREST(fd) < 14 )
 		return 0;
-	if( pincode_config.pincode_enabled==0 || RFIFOL(fd,2) != sd->account_id )
+	if( charserv_config.pincode_config.pincode_enabled==0 || RFIFOL(fd,2) != sd->account_id )
 		return 0;
 
 	memset(oldpin,0,PINCODE_LENGTH+1);
@@ -199,7 +200,7 @@ int chclif_parse_pincode_setnew( int fd, struct char_session_data* sd ){
 	if( RFIFOREST(fd) < 10 )
 		return 0;
 
-	if( pincode_config.pincode_enabled==0 || RFIFOL(fd,2) != sd->account_id )
+	if( charserv_config.pincode_config.pincode_enabled==0 || RFIFOL(fd,2) != sd->account_id )
 		return 0;
 	strncpy( newpin, (char*)RFIFOP(fd,6), PINCODE_LENGTH );
 	RFIFOSKIP(fd,10);
@@ -411,7 +412,7 @@ int chclif_parse_char_delete2_req(int fd, struct char_session_data* sd) {
 */
 
 	// success
-	delete_date = time(NULL)+(char_config.char_del_delay);
+	delete_date = time(NULL)+(charserv_config.char_config.char_del_delay);
 
 	if( SQL_SUCCESS != Sql_Query(sql_handle, "UPDATE `%s` SET `delete_date`='%lu' WHERE `char_id`='%d'", schema_config.char_db, (unsigned long)delete_date, char_id) )
 	{
@@ -479,7 +480,8 @@ int chclif_parse_char_delete2_accept(int fd, struct char_session_data* sd) {
 		return 0;
 	}
 
-	if( ( char_config.char_del_level > 0 && base_level >= (unsigned int)char_config.char_del_level ) || ( char_config.char_del_level < 0 && base_level <= (unsigned int)(-char_config.char_del_level) ) )
+	if( ( charserv_config.char_config.char_del_level > 0 && base_level >= (unsigned int)charserv_config.char_config.char_del_level )
+	|| ( charserv_config.char_config.char_del_level < 0 && base_level <= (unsigned int)(-charserv_config.char_config.char_del_level) ) )
 	{// character level config restriction
 		chclif_char_delete2_accept_ack(fd, char_id, 2);
 		return 0;

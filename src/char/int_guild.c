@@ -1143,15 +1143,15 @@ int mapif_parse_CreateGuild(int fd,int account_id,char *name,struct guild_member
 		return 0;
 	}
 	// Check Authorised letters/symbols in the name of the character
-	if (charserv_config.char_name_option == 1) { // only letters/symbols in char_name_letters are authorised
+	if (charserv_config.char_config.char_name_option == 1) { // only letters/symbols in char_name_letters are authorised
 		for (i = 0; i < NAME_LENGTH && name[i]; i++)
-			if (strchr(charserv_config.char_name_letters, name[i]) == NULL) {
+			if (strchr(charserv_config.char_config.char_name_letters, name[i]) == NULL) {
 				mapif_guild_created(fd,account_id,NULL);
 				return 0;
 			}
-	} else if (charserv_config.char_name_option == 2) { // letters/symbols in char_name_letters are forbidden
+	} else if (charserv_config.char_config.char_name_option == 2) { // letters/symbols in char_name_letters are forbidden
 		for (i = 0; i < NAME_LENGTH && name[i]; i++)
-			if (strchr(charserv_config.char_name_letters, name[i]) != NULL) {
+			if (strchr(charserv_config.char_config.char_name_letters, name[i]) != NULL) {
 				mapif_guild_created(fd,account_id,NULL);
 				return 0;
 			}

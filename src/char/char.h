@@ -10,8 +10,8 @@
 #include "../common/mmo.h"
 
 
-int login_fd;
-int char_fd;
+extern int login_fd; //login file descriptor
+extern int char_fd; //char file descriptor
 
 enum E_CHARSERVER_ST {
 	CHARSERVER_ST_RUNNING = CORE_ST_LAST,
@@ -59,7 +59,8 @@ struct Schema_Config {
 	char mercenary_db[256];
 	char mercenary_owner_db[256];
 	char ragsrvinfo_db[256];
-} schema_config;
+};
+extern struct Schema_Config schema_config;
 
 // Pincode system
 enum pincode_state {
@@ -77,19 +78,21 @@ struct Pincode_Config {
 	int pincode_changetime;
 	int pincode_maxtry;
 	bool pincode_force;
-} pincode_config;
-
+};
 struct CharMove_Config {
 	bool char_move_enabled;
 	bool char_movetoused;
 	bool char_moves_unlimited;
-} charmove_config;
-
+};
 struct Char_Config {
 	int char_per_account; //Maximum chars per account (default unlimited) [Sirius]
 	int char_del_level; //From which level u can delete character [Lupus]
 	int char_del_delay; //minimum delay before effectly do the deletion
-} char_config;
+	bool name_ignoring_case; // Allow or not identical name for characters but with a different case by [Yor]
+	char unknown_char_name[NAME_LENGTH]; // Name to use when the requested name cannot be determined
+	char char_name_letters[1024]; // list of letters/symbols allowed (or not) in a character name. by [Yor]
+	int char_name_option; // Option to know which letters/symbols are authorised in the name of a character (0: all, 1: only those in char_name_letters, 2: all EXCEPT those in char_name_letters) by [Yor]
+};
 
 #define TRIM_CHARS "\255\xA0\032\t\x0A\x0D " //The following characters are trimmed regardless because they cause confusion and problems on the servers. [Skotlex]
 struct CharServ_Config {
@@ -109,10 +112,9 @@ struct CharServ_Config {
 	bool char_new;
 	int char_new_display;
 
-	bool name_ignoring_case; // Allow or not identical name for characters but with a different case by [Yor]
-	int char_name_option; // Option to know which letters/symbols are authorised in the name of a character (0: all, 1: only those in char_name_letters, 2: all EXCEPT those in char_name_letters) by [Yor]
-	char unknown_char_name[NAME_LENGTH]; // Name to use when the requested name cannot be determined
-	char char_name_letters[1024]; // list of letters/symbols allowed (or not) in a character name. by [Yor]
+	struct CharMove_Config charmove_config;
+	struct Char_Config char_config;
+	struct Pincode_Config pincode_config;
 
 	int save_log; // show loading/saving messages
 	int log_char;	// loggin char or not [devil]
@@ -125,7 +127,8 @@ struct CharServ_Config {
 	int autosave_interval;
 	int start_zeny;
 	int guild_exp_rate;
-} charserv_config;
+};
+extern struct CharServ_Config charserv_config;
 
 #define MAX_MAP_SERVERS 30 //how many mapserver a char server can handle
 struct mmo_map_server {
@@ -134,7 +137,8 @@ struct mmo_map_server {
 	uint16 port;
 	int users;
 	unsigned short map[MAX_MAP_PER_SERVER];
-} server[MAX_MAP_SERVERS];
+};
+extern struct mmo_map_server server[MAX_MAP_SERVERS];
 
 #define AUTH_TIMEOUT 30000
 struct auth_node {
@@ -186,13 +190,13 @@ struct mmo_charstatus;
 DBMap* char_get_chardb(); // int char_id -> struct mmo_charstatus*
 
 //Custom limits for the fame lists. [Skotlex]
-int fame_list_size_chemist;
-int fame_list_size_smith;
-int fame_list_size_taekwon;
+extern int fame_list_size_chemist;
+extern int fame_list_size_smith;
+extern int fame_list_size_taekwon;
 // Char-server-side stored fame lists [DracoRPG]
-struct fame_list smith_fame_list[MAX_FAME_LIST];
-struct fame_list chemist_fame_list[MAX_FAME_LIST];
-struct fame_list taekwon_fame_list[MAX_FAME_LIST];
+extern struct fame_list smith_fame_list[MAX_FAME_LIST];
+extern struct fame_list chemist_fame_list[MAX_FAME_LIST];
+extern struct fame_list taekwon_fame_list[MAX_FAME_LIST];
 
 #define DEFAULT_AUTOSAVE_INTERVAL 300*1000
 #define MAX_CHAR_BUF 144 //Max size (for WFIFOHEAD calls)

@@ -47,17 +47,18 @@ int chlogif_pincode_notifyLoginPinUpdate( int account_id, char* pin ){
 }
 
 void chlogif_pincode_start(int fd, struct char_session_data* sd){
-	if( pincode_config.pincode_enabled ){
+	if( charserv_config.pincode_config.pincode_enabled ){
 		// PIN code system enabled
 		if( strlen( sd->pincode ) <= 0 ){
 			// No PIN code has been set yet
-			if( pincode_config.pincode_force ){
+			if( charserv_config.pincode_config.pincode_force ){
 				chclif_pincode_sendstate( fd, sd, PINCODE_NEW );
 			}else{
 				chclif_pincode_sendstate( fd, sd, PINCODE_PASSED );
 			}
 		}else{
-			if( !(pincode_config.pincode_changetime) || ( sd->pincode_change + pincode_config.pincode_changetime ) > time(NULL) ){
+			if( !(charserv_config.pincode_config.pincode_changetime)
+			|| ( sd->pincode_change + charserv_config.pincode_config.pincode_changetime ) > time(NULL) ){
 				DBMap*  online_char_db = char_get_onlinedb();
 				struct online_char_data* node = (struct online_char_data*)idb_get( online_char_db, sd->account_id );
 

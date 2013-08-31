@@ -1,5 +1,11 @@
-// Copyright (c) Athena Dev Teams - Licensed under GNU GPL
-// For more information, see LICENCE in the main folder
+/**
+ * @file loginlog.c
+ * Module purpose is to register (log) events into file or sql db
+ * Licensed under GNU GPL.
+ *  For more information, see LICENCE in the main folder.
+ * @author Athena Dev Teams rev < 15k
+ * @author rAthena Dev Team
+ */
 
 #include "../common/cbasetypes.h"
 #include "../common/mmo.h"
@@ -29,9 +35,13 @@ static Sql* sql_handle = NULL;
 static bool enabled = false;
 
 
-// Returns the number of failed login attemps by the ip in the last minutes.
-unsigned long loginlog_failedattempts(uint32 ip, unsigned int minutes)
-{
+/**
+ * Get the number of failed login attemps by the ip in the last minutes.
+ * @param ip: ip to search attempt from
+ * @param minutes: intervall to search
+ * @return number of failed attemps
+ */
+unsigned long loginlog_failedattempts(uint32 ip, unsigned int minutes) {
 	unsigned long failures = 0;
 
 	if( !enabled )
@@ -52,11 +62,14 @@ unsigned long loginlog_failedattempts(uint32 ip, unsigned int minutes)
 }
 
 
-/*=============================================
+/**
  * Records an event in the login log
- *---------------------------------------------*/
-void login_log(uint32 ip, const char* username, int rcode, const char* message)
-{
+ * @param ip:
+ * @param username:
+ * @param rcode:
+ * @param message:
+ */
+void login_log(uint32 ip, const char* username, int rcode, const char* message) {
 	char esc_username[NAME_LENGTH*2+1];
 	char esc_message[255*2+1];
 	int retcode;
@@ -75,60 +88,13 @@ void login_log(uint32 ip, const char* username, int rcode, const char* message)
 		Sql_ShowDebug(sql_handle);
 }
 
-bool loginlog_init(void)
-{
-	const char* username;
-	const char* password;
-	const char* hostname;
-	uint16      port;
-	const char* database;
-	const char* codepage;
-
-	if( log_db_hostname[0] != '\0' )
-	{// local settings
-		username = log_db_username;
-		password = log_db_password;
-		hostname = log_db_hostname;
-		port     = log_db_port;
-		database = log_db_database;
-		codepage = log_codepage;
-	}
-	else
-	{// global settings
-		username = global_db_username;
-		password = global_db_password;
-		hostname = global_db_hostname;
-		port     = global_db_port;
-		database = global_db_database;
-		codepage = global_codepage;
-	}
-
-	sql_handle = Sql_Malloc();
-
-	if( SQL_ERROR == Sql_Connect(sql_handle, username, password, hostname, port, database) )
-	{
-		Sql_ShowDebug(sql_handle);
-		Sql_Free(sql_handle);
-		exit(EXIT_FAILURE);
-	}
-
-	if( codepage[0] != '\0' && SQL_ERROR == Sql_SetEncoding(sql_handle, codepage) )
-		Sql_ShowDebug(sql_handle);
-
-	enabled = true;
-
-	return true;
-}
-
-bool loginlog_final(void)
-{
-	Sql_Free(sql_handle);
-	sql_handle = NULL;
-	return true;
-}
-
-bool loginlog_config_read(const char* key, const char* value)
-{
+/**
+ * Read configuration options
+ * @param key: config keyword
+ * @param value: config value for keyword
+ * @return true success, false config not complete or serv already running
+ */
+bool loginlog_config_read(const char* key, const char* value) {
 	const char* signature;
 
 	signature = "sql.";
@@ -182,3 +148,68 @@ bool loginlog_config_read(const char* key, const char* value)
 
 	return true;
 }
+
+
+/// Constructor destructor
+
+/**
+ * Initialise the module.
+ * Launched at login-serv start, create db or other long scope variable here.
+ * @return true sucess else exit execution
+ */
+bool loginlog_init(void) {
+	const char* username;
+	const char* password;
+	const char* hostname;
+	uint16      port;
+	const char* database;
+	const char* codepage;
+
+	if( log_db_hostname[0] != '\0' )
+	{// local settings
+		username = log_db_username;
+		password = log_db_password;
+		hostname = log_db_hostname;
+		port     = log_db_port;
+		database = log_db_database;
+		codepage = log_codepage;
+	}
+	else
+	{// global settings
+		username = global_db_username;
+		password = global_db_password;
+		hostname = global_db_hostname;
+		port     = global_db_port;
+		database = global_db_database;
+		codepage = global_codepage;
+	}
+
+	sql_handle = Sql_Malloc();
+
+	if( SQL_ERROR == Sql_Connect(sql_handle, username, password, hostname, port, database) )
+	{
+		Sql_ShowDebug(sql_handle);
+		Sql_Free(sql_handle);
+		exit(EXIT_FAILURE);
+	}
+
+	if( codepage[0] != '\0' && SQL_ERROR == Sql_SetEncoding(sql_handle, codepage) )
+		Sql_ShowDebug(sql_handle);
+
+	enabled = true;
+
+	return true;
+}
+
+
+/**
+ * Handler to cleanup module, called when login-server stops.
+ * atm closing sql connection to log schema
+ * @return true sucess
+ */
+bool loginlog_final(void) {
+	Sql_Free(sql_handle);
+	sql_handle = NULL;
+	return true;
+}
+

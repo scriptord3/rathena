@@ -1,8 +1,10 @@
-/*
- * File:   cli.h
- * Author: lighta
- *
- * Created on February 21, 2013, 6:15 PM
+/**
+ * @file cli.h
+ * Module purpose is to handle console (cli=console line input) when launching serv or when it's running
+ *  This contain common function to all serv, but then dispatch it to specific parser per server
+ * Licensed under GNU GPL.
+ *  For more information, see LICENCE in the main folder.
+ * @author rAthena Dev Team
  */
 
 #ifndef CLI_H

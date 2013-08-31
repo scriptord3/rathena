@@ -474,9 +474,9 @@ int mapif_parse_CreateParty(int fd, char *name, int item, int item2, struct part
 		return 0;
 	}
 	// Check Authorised letters/symbols in the name of the character
-	if (charserv_config.char_name_option == 1) { // only letters/symbols in char_name_letters are authorised
+	if (charserv_config.char_config.char_name_option == 1) { // only letters/symbols in char_name_letters are authorised
 		for (i = 0; i < NAME_LENGTH && name[i]; i++)
-			if (strchr(charserv_config.char_name_letters, name[i]) == NULL) {
+			if (strchr(charserv_config.char_config.char_name_letters, name[i]) == NULL) {
 				if( name[i] == '"' ) { /* client-special-char */
 					normalize_name(name,"\"");
 					mapif_parse_CreateParty(fd,name,item,item2,leader);
@@ -485,9 +485,9 @@ int mapif_parse_CreateParty(int fd, char *name, int item, int item2, struct part
 				mapif_party_created(fd,leader->account_id,leader->char_id,NULL);
 				return 0;
 			}
-	} else if (charserv_config.char_name_option == 2) { // letters/symbols in char_name_letters are forbidden
+	} else if (charserv_config.char_config.char_name_option == 2) { // letters/symbols in char_name_letters are forbidden
 		for (i = 0; i < NAME_LENGTH && name[i]; i++)
-			if (strchr(charserv_config.char_name_letters, name[i]) != NULL) {
+			if (strchr(charserv_config.char_config.char_name_letters, name[i]) != NULL) {
 				mapif_party_created(fd,leader->account_id,leader->char_id,NULL);
 				return 0;
 			}
