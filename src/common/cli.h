@@ -1,7 +1,7 @@
 /**
  * @file cli.h
- * Module purpose is to handle console (cli=console line input) when launching serv or when it's running
- *  This contain common function to all serv, but then dispatch it to specific parser per server
+ * Module purpose is to handle the console (cli=console line input) while the servers launch and run.
+ *  This contains functions common to all servers, but then dispatches them to a specific parser on each server.
  * Licensed under GNU GPL.
  *  For more information, see LICENCE in the main folder.
  * @author rAthena Dev Team

@@ -41,7 +41,7 @@ int logcnslif_get_options(int argc, char ** argv);
 void display_helpscreen(bool do_exit);
 
 /**
- * Initialise the module.
+ * Initialize the module.
  * Launched at login-serv start, create db or other long scope variable here.
  */
 void do_init_logincnslif(void);

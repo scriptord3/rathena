@@ -30,7 +30,7 @@ struct login_session_data {
 	char sex;// 'F','M','S'
 
 	char userid[NAME_LENGTH];
-	char passwd[PASSWD_LENGHT]; // 23+1 for plaintext, 32+1 for md5-ed passwords
+	char passwd[PASSWD_LENGTH]; // 23+1 for plaintext, 32+1 for md5-ed passwords
 	int passwdenc;
 	char md5key[20];
 	uint16 md5keylen;
@@ -81,7 +81,7 @@ struct Login_Config {
 	uint32 client_version_to_connect;			// the client version needed to connect (if checking is enabled)
 
 	bool ipban;						// perform IP blocking (via contents of `ipbanlist`) ?
-	bool dynamic_pass_failure_ban;				// automatic IP blocking due to failed login attemps ?
+	bool dynamic_pass_failure_ban;				// automatic IP blocking due to failed login attempts ?
 	unsigned int dynamic_pass_failure_ban_interval;		// how far to scan the loginlog for password failures
 	unsigned int dynamic_pass_failure_ban_limit;		// number of failures needed to trigger the ipban
 	unsigned int dynamic_pass_failure_ban_duration;		// duration of the ipban

@@ -1130,7 +1130,7 @@ void channel_read_config(void) {
 }
 
 /*
- * Initialise db and read config
+ * Initialize db and read config
  * return
  *  0 : success
  */

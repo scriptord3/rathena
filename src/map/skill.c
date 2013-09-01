@@ -2862,7 +2862,7 @@ int64 skill_attack (int attack_type, struct block_list* src, struct block_list *
 }
 
 /*==========================================
- * sub fonction for recursive skill call.
+ * sub function for recursive skill call.
  * Checking bl battle flag and display dammage
  * then call func with source,target,skill_id,skill_lv,tick,flag
  *------------------------------------------*/
@@ -16493,7 +16493,7 @@ int skill_produce_mix (struct map_session_data *sd, uint16 skill_id, int nameid,
 					case 7139: // Glistening Coat
 						make_per -= (1+rnd()%100)*10;
 						break;
-					//Common items, recieve no bonus or penalty, listed just because they are commonly produced
+					//Common items receive no bonus or penalty, listed just because they are commonly produced
 					case 505: // Blue Potion
 					case 545: // Condensed Red Potion
 					case 605: // Anodyne

@@ -14,36 +14,36 @@
 #include "../common/cbasetypes.h"
 
 /**
- * Check if ip is in active bans list
+ * Check if ip is in the active bans list.
  * @param ip: ipv4 ip to check if ban
- * @return true found or error, false not in list
+ * @return true if found or error, false if not in list
  */
 bool ipban_check(uint32 ip);
 
 /**
- * Log failed attempt
- *  Also ban user if too much fail attemp is made
+ * Log a failed attempt.
+ *  Also bans the user if too many failed attempts are made.
  * @param ip: ipv4 ip to record the failure
  */
 void ipban_log(uint32 ip);
 
 /**
- * Read configuration options
+ * Read configuration options.
  * @param key: config keyword
  * @param value: config value for keyword
- * @return true success, false config not complete or serv already running
+ * @return true if successful, false if config not complete or server already running
  */
 bool ipban_config_read(const char* key, const char* value);
 
 /**
- * Initialise the module.
+ * Initialize the module.
  * Launched at login-serv start, create db or other long scope variable here.
  */
 void ipban_init(void);
 
 /**
  * Destroy the module.
- * Launched at login-serv end, cleanup db connection or other thing here
+ * Launched at login-serv end, cleanup db connection or other thing here.
  */
 void ipban_final(void);
 

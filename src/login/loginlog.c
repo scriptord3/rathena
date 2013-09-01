@@ -1,6 +1,6 @@
 /**
  * @file loginlog.c
- * Module purpose is to register (log) events into file or sql db
+ * Module purpose is to register (log) events into a file or sql database.
  * Licensed under GNU GPL.
  *  For more information, see LICENCE in the main folder.
  * @author Athena Dev Teams rev < 15k
@@ -36,10 +36,10 @@ static bool enabled = false;
 
 
 /**
- * Get the number of failed login attemps by the ip in the last minutes.
+ * Get the number of failed login attempts by the ip in the last minutes.
  * @param ip: ip to search attempt from
  * @param minutes: intervall to search
- * @return number of failed attemps
+ * @return number of failed attempts
  */
 unsigned long loginlog_failedattempts(uint32 ip, unsigned int minutes) {
 	unsigned long failures = 0;
@@ -63,7 +63,7 @@ unsigned long loginlog_failedattempts(uint32 ip, unsigned int minutes) {
 
 
 /**
- * Records an event in the login log
+ * Records an event in the login log.
  * @param ip:
  * @param username:
  * @param rcode:
@@ -89,10 +89,10 @@ void login_log(uint32 ip, const char* username, int rcode, const char* message) 
 }
 
 /**
- * Read configuration options
+ * Read configuration options.
  * @param key: config keyword
  * @param value: config value for keyword
- * @return true success, false config not complete or serv already running
+ * @return true if successful, false if config not complete or server already running
  */
 bool loginlog_config_read(const char* key, const char* value) {
 	const char* signature;
@@ -153,9 +153,9 @@ bool loginlog_config_read(const char* key, const char* value) {
 /// Constructor destructor
 
 /**
- * Initialise the module.
+ * Initialize the module.
  * Launched at login-serv start, create db or other long scope variable here.
- * @return true sucess else exit execution
+ * @return true if success else exit execution
  */
 bool loginlog_init(void) {
 	const char* username;
@@ -204,8 +204,8 @@ bool loginlog_init(void) {
 
 /**
  * Handler to cleanup module, called when login-server stops.
- * atm closing sql connection to log schema
- * @return true sucess
+ * Currently closing sql connection to log schema.
+ * @return true success
  */
 bool loginlog_final(void) {
 	Sql_Free(sql_handle);

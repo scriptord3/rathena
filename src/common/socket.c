@@ -1384,7 +1384,7 @@ void socket_init(void)
 
 	socket_config_read(SOCKET_CONF_FILENAME);
 
-	// initialise last send-receive tick
+	// initialize last send-receive tick
 	last_tick = time(NULL);
 
 	// session[0] is now currently used for disconnected sessions of the map server, and as such,

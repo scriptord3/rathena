@@ -18,12 +18,12 @@ extern "C" {
  * Entry point from client to log-server.
  * Function that checks incoming command, then splits it to the correct handler.
  * @param fd: file descriptor to parse, (link to client)
- * @return 0=invalid session,marked for disconection,unknow packet, banned..; 1=success
+ * @return 0=invalid session,marked for disconnection,unknow packet, banned..; 1=success
  */
 int logclif_parse(int fd);
 
 /**
- * Initialise the module.
+ * Initialize the module.
  * Launched at login-serv start, create db or other long scope variable here.
  */
 void do_init_loginclif(void);

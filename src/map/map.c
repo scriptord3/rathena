@@ -243,7 +243,7 @@ int map_freeblock_timer(int tid, unsigned int tick, int id, intptr_t data)
 //
 /*==========================================
  * Handling of map_bl[]
- * The adresse of bl_heal is set in bl->prev
+ * The address of bl_heal is set in bl->prev
  *------------------------------------------*/
 static struct block_list bl_head;
 

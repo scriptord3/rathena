@@ -987,7 +987,7 @@ int chclif_parse_reqrename(int fd, struct char_session_data* sd, int cmd){
 
 // 0x28f <char_id>.L
 int chclif_parse_ackrename(int fd, struct char_session_data* sd){
-	// 0: Sucessfull
+	// 0: Successful
 	// 1: This character's name has already been changed. You cannot change a character's name more than once.
 	// 2: User information is not correct.
 	// 3: You have failed to change this character's name.

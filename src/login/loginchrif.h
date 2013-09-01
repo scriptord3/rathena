@@ -18,7 +18,7 @@ extern "C" {
  * Entry point from char-server to log-server.
  * Function that checks incoming command, then splits it to the correct handler.
  * @param fd: file descriptor to parse, (link to char-serv)
- * @return 0=invalid server,marked for disconection,unknow packet; 1=success
+ * @return 0=invalid server,marked for disconnection,unknow packet; 1=success
  */
 int logchrif_parse(int fd);
 

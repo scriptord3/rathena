@@ -1,7 +1,7 @@
 /**
  * @file cli.c
- * Module purpose is to handle console (cli=console line input) when launching serv or when it's running
- *  This contain common function to all serv, but then dispatch it to specific parser per server
+ * Module purpose is to handle the console (cli=console line input) while the servers launch and run.
+ *  This contains functions common to all servers, but then dispatches them to a specific parser on each server.
  * Licensed under GNU GPL.
  *  For more information, see LICENCE in the main folder.
  * @author rAthena Dev Team
@@ -39,7 +39,7 @@ char* LAN_CONF_NAME; //char-login
 char* MSG_CONF_NAME_EN; //all
 
 /**
- * Function to check if specified option have an argument follow it
+ * Function to check if the specified option has an argument following it.
  * @param option: actual args string
  * @param i: index of current args
  * @param argc: arguments count
@@ -57,9 +57,9 @@ bool opt_has_next_value(const char* option, int i, int argc){
 }
 
 /**
- * Display some info about emulator such as
+ * Display some information about the emulator, such as:
  *   svn version
- *   website/forum adresse
+ *   website/forum address
  *   irc hangout
  * @param do_exit: terminate execution ?
  */
@@ -73,8 +73,8 @@ void display_versionscreen(bool do_exit) {
 }
 
 /**
- * Read the option specify in command line
- * and assign the confs used by the different server
+ * Read the option specified in the command line
+ * and assign the confs used by the different servers.
  * @TODO remove and place into csnlif of different serv
  * @param argc: arguments count (from main)
  * @param argv: arguments values (from main)
@@ -150,8 +150,8 @@ int cli_get_options(int argc, char ** argv) {
 }
 
 /**
- * Detect if the console has some input to be read
- * @return true.if event, false no
+ * Detect if the console has some input to be read.
+ * @return true if event, else false
  */
 bool cli_hasevent(){
 #ifdef WIN32
@@ -165,12 +165,12 @@ bool cli_hasevent(){
 }
 
 /**
- * Timered function to check if the console have a new event to be read
+ * Timered function to check if the console has a new event to be read.
  * @param tid: timer id
  * @param tick: tick of execution
  * @param id: user account id
  * @param data: unused
- * @return :0
+ * @return 0
  */
 int parse_console_timer(int tid, unsigned int tick, int id, intptr_t data) {
 	char buf[MAX_CONSOLE_IN]; //max cmd atm is 63+63+63+3+3

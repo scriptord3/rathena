@@ -48,7 +48,7 @@ int logchrif_sendallwos(int sfd, uint8* buf, size_t len) {
 }
 
 /**
- * Timered function to synchronise ip addresses.
+ * Timered function to synchronize ip addresses.
  *  Requesting all char to update their registered ip and transmit their new ip.
  *  Performed each ip_sync_interval.
  * @param tid: timer id
@@ -699,7 +699,7 @@ int logchrif_parse_pincode_authfail(int fd){
  * Entry point from char-server to log-server.
  * Function that checks incoming command, then splits it to the correct handler.
  * @param fd: file descriptor to parse, (link to char-serv)
- * @return 0=invalid server,marked for disconection,unknow packet; 1=success
+ * @return 0=invalid server,marked for disconnection,unknow packet; 1=success
  */
 int logchrif_parse(int fd){
 	int id;

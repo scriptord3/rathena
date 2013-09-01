@@ -158,7 +158,7 @@ int cnslif_parse(const char* buf){
 }
 
 /**
- * Initialise the module.
+ * Initialize the module.
  * Launched at login-serv start, create db or other long scope variable here.
  */
 void do_init_logincnslif(void){

@@ -233,7 +233,7 @@ static void logclif_auth_failed(struct login_session_data* sd, int result) {
 }
 
 /**
- * Received a keepalive packet to maintain connection
+ * Received a keepalive packet to maintain connection.
  * 0x200 <account.userid>.24B.
  * @param fd: fd to parse from (client fd)
  * @return 0 not enough info transmitted, 1 success
@@ -246,7 +246,7 @@ static int logclif_parse_keepalive(int fd){
 }
 
 /**
- * Received a keepalive packet to maintain connection
+ * Received a keepalive packet to maintain connection.
  * S 0204 <md5 hash>.16B (kRO 2004-05-31aSakexe langtype 0 and 6)
  * @param fd: fd to parse from (client fd)
  * @return 0 not enough info transmitted, 1 success
@@ -261,11 +261,11 @@ static int logclif_parse_updclhash(int fd, struct login_session_data *sd){
 }
 
 /**
- * Received connection request
+ * Received a connection request.
  * @param fd: file descriptor to parse from (client)
  * @param sd: client session
  * @param command: packet type sent
- * @param ip: ipv4 adresse (client)
+ * @param ip: ipv4 address (client)
  *  S 0064 <version>.L <username>.24B <password>.24B <clienttype>.B
  *  S 0277 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B
  *  S 02b0 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B <g_isGravityID>.B
@@ -291,7 +291,7 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 		int result;
 		uint32 version;
 		char username[NAME_LENGTH];
-		char password[PASSWD_LENGHT];
+		char password[PASSWD_LENGTH];
 		unsigned char passhash[16];
 		uint8 clienttype;
 		bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
@@ -321,7 +321,7 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 			safestrncpy(username, (const char*)RFIFOP(fd,6), NAME_LENGTH);
 			if( israwpass )
 			{
-				safestrncpy(password, (const char*)RFIFOP(fd,30), PASSWD_LENGHT);
+				safestrncpy(password, (const char*)RFIFOP(fd,30), PASSWD_LENGTH);
 				clienttype = RFIFOB(fd,54);
 			}
 			else
@@ -367,7 +367,7 @@ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int comm
 }
 
 /**
- * Client request an md5key for his session, keys will be generate and sent back
+ * Client requests an md5key for his session: keys will be generated and sent back.
  * @param fd: file descriptor to parse from (client)
  * @param sd: client session
  * @return 1 success
@@ -393,7 +393,7 @@ static int logclif_parse_reqkey(int fd, struct login_session_data *sd){
  * This is needed to exchange packets.
  * @param fd: file descriptor to parse from (client)
  * @param sd: client session
- * @param ip: ipv4 adresse (client)
+ * @param ip: ipv4 address (client)
  * @return 0 packet received too shirt, 1 success
  */
 static int logclif_parse_reqcharconnec(int fd, struct login_session_data *sd, char* ip){
@@ -467,7 +467,7 @@ static int logclif_parse_reqcharconnec(int fd, struct login_session_data *sd, ch
  * Entry point from client to log-server.
  * Function that checks incoming command, then splits it to the correct handler.
  * @param fd: file descriptor to parse, (link to client)
- * @return 0=invalid session,marked for disconection,unknow packet, banned..; 1=success
+ * @return 0=invalid session,marked for disconnection,unknow packet, banned..; 1=success
  */
 int logclif_parse(int fd) {
 	struct login_session_data* sd = (struct login_session_data*)session[fd]->session_data;
@@ -542,7 +542,7 @@ int logclif_parse(int fd) {
 /// Constructor destructor
 
 /**
- * Initialise the module.
+ * Initialize the module.
  * Launched at login-serv start, create db or other long scope variable here.
  */
 void do_init_loginclif(void){

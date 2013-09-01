@@ -1,6 +1,6 @@
 /**
  * @file account.c
- * Module purpose is to save, load, update change into account table; or file
+ * Module purpose is to save, load, and update changes into the account table or file.
  * Licensed under GNU GPL.
  *  For more information, see LICENCE in the main folder.
  * @author Athena Dev Teams < r15k
@@ -116,7 +116,7 @@ AccountDB* account_db_sql(void) {
 
 
 /**
- * Establishes database connection
+ * Establish the database connection.
  * @param self: pointer to db
  */
 static bool account_db_sql_init(AccountDB* self) {
@@ -166,7 +166,7 @@ static bool account_db_sql_init(AccountDB* self) {
 }
 
 /**
- * Destroy database and close connection to it
+ * Destroy the database and close the connection to it.
  * @param self: pointer to db
  */
 static void account_db_sql_destroy(AccountDB* self){
@@ -178,13 +178,13 @@ static void account_db_sql_destroy(AccountDB* self){
 }
 
 /**
- * Get configuration info into buf
- *  if the option is supported, adjusts the internal state
+ * Get configuration information into buf.
+ *  If the option is supported, adjust the internal state.
  * @param self: pointer to db
  * @param key: config keyword
  * @param buf: value set of the keyword
  * @param buflen: size of buffer to avoid out of bound
- * @return true success, false something has failed
+ * @return true if successful, false if something has failed
  */
 static bool account_db_sql_get_property(AccountDB* self, const char* key, char* buf, size_t buflen)
 {
@@ -273,12 +273,12 @@ static bool account_db_sql_get_property(AccountDB* self, const char* key, char* 
 }
 
 /**
- * Read and set configuration
- *  if the option is supported, adjusts the internal state
+ * Read and set configuration.
+ *  If the option is supported, adjust the internal state.
  * @param self: pointer to db
  * @param key: config keyword
  * @param value: config value for keyword
- * @return true success, false something has failed
+ * @return true if successful, false if something has failed
  */
 static bool account_db_sql_set_property(AccountDB* self, const char* key, const char* value) {
 	AccountDB_SQL* db = (AccountDB_SQL*)self;
@@ -350,12 +350,12 @@ static bool account_db_sql_set_property(AccountDB* self, const char* key, const 
 }
 
 /**
- * Create a new account entry
+ * Create a new account entry.
  *  If acc->account_id is -1, the account id will be auto-generated,
  *  and its value will be written to acc->account_id if everything succeeds.
  * @param self: pointer to db
  * @param acc: pointer of mmo_account to save
- * @return true success, false something has failed
+ * @return true if successful, false if something has failed
  */
 static bool account_db_sql_create(AccountDB* self, struct mmo_account* acc) {
 	AccountDB_SQL* db = (AccountDB_SQL*)self;
@@ -407,10 +407,10 @@ static bool account_db_sql_create(AccountDB* self, struct mmo_account* acc) {
 }
 
 /**
- * Delete an existing account entry + its regs
+ * Delete an existing account entry and its regs.
  * @param self: pointer to db
- * @param account_id:  id of user account
- * @return true success, false something has failed
+ * @param account_id: id of user account
+ * @return true if successful, false if something has failed
  */
 static bool account_db_sql_remove(AccountDB* self, const int account_id) {
 	AccountDB_SQL* db = (AccountDB_SQL*)self;
@@ -430,10 +430,10 @@ static bool account_db_sql_remove(AccountDB* self, const int account_id) {
 }
 
 /**
- * Update an existing account with the provided new data (both account and regs)
+ * Update an existing account with the new data provided (both account and regs).
  * @param self: pointer to db
  * @param acc: pointer of mmo_account to save
- * @return true success, false something has failed
+ * @return true if successful, false if something has failed
  */
 static bool account_db_sql_save(AccountDB* self, const struct mmo_account* acc) {
 	AccountDB_SQL* db = (AccountDB_SQL*)self;
@@ -441,12 +441,12 @@ static bool account_db_sql_save(AccountDB* self, const struct mmo_account* acc) 
 }
 
 /**
- * Retrieve data from db and store it in the provided data structure
- *  Filled data structure is done by delegation to mmo_auth_fromsql
+ * Retrieve data from db and store it in the provided data structure.
+ *  Filled data structure is done by delegation to mmo_auth_fromsql.
  * @param self: pointer to db
  * @param acc: pointer of mmo_account to fill
  * @param account_id: id of user account
- * @return true success, false something has failed
+ * @return true if successful, false if something has failed
  */
 static bool account_db_sql_load_num(AccountDB* self, struct mmo_account* acc, const int account_id) {
 	AccountDB_SQL* db = (AccountDB_SQL*)self;
@@ -454,13 +454,13 @@ static bool account_db_sql_load_num(AccountDB* self, struct mmo_account* acc, co
 }
 
 /**
- * Retrieve data from db and store it in the provided data structure
- *  Actually doesn't retrieve yet but escape and checking userid then transform userid to accid for fetching.
- *  Filled data structure is done by delegation to account_db_sql_load_num
+ * Retrieve data from db and store it in the provided data structure.
+ *  Doesn't actually retrieve data yet: escapes and checks userid, then transforms it to accid for fetching.
+ *  Filled data structure is done by delegation to account_db_sql_load_num.
  * @param self: pointer to db
  * @param acc: pointer of mmo_account to fill
  * @param userid: name of user account
- * @return true success, false something has failed
+ * @return true if successful, false if something has failed
  */
 static bool account_db_sql_load_str(AccountDB* self, struct mmo_account* acc, const char* userid) {
 	AccountDB_SQL* db = (AccountDB_SQL*)self;
@@ -531,7 +531,7 @@ static void account_db_sql_iter_destroy(AccountDBIterator* self) {
  * Fetches the next account in the database.
  * @param self: pointer to db iterator
  * @param acc: pointer of mmo_account to fill
- * @return true next account found and filled, false something has failed
+ * @return true if next account found and filled, false if something has failed
  */
 static bool account_db_sql_iter_next(AccountDBIterator* self, struct mmo_account* acc) {
 	AccountDBIterator_SQL* iter = (AccountDBIterator_SQL*)self;
@@ -565,11 +565,11 @@ static bool account_db_sql_iter_next(AccountDBIterator* self, struct mmo_account
 }
 
 /**
- * Fetch a struct mmo_account from sql
+ * Fetch a struct mmo_account from sql.
  * @param db: pointer to db
  * @param acc: pointer of mmo_account to fill
  * @param account_id: id of user account to take data from
- * @return true success, false something has failed
+ * @return true if successful, false if something has failed
  */
 static bool mmo_auth_fromsql(AccountDB_SQL* db, struct mmo_account* acc, int account_id) {
 	Sql* sql_handle = db->accounts;
@@ -636,11 +636,11 @@ static bool mmo_auth_fromsql(AccountDB_SQL* db, struct mmo_account* acc, int acc
 }
 
 /**
- * Save a struct mmo_account in sql
+ * Save a struct mmo_account in sql.
  * @param db: pointer to db
  * @param acc: pointer of mmo_account to save
  * @param is_new: if it's a new entry or should we update
- * @return true success, false something has failed
+ * @return true if successful, false if something has failed
  */
 static bool mmo_auth_tosql(AccountDB_SQL* db, const struct mmo_account* acc, bool is_new) {
 	Sql* sql_handle = db->accounts;
