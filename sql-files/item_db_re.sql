@@ -7754,20 +7754,20 @@ REPLACE INTO `item_db_re` VALUES (16412,'Ice_Wing_Ear_Box','Ice Wing Ear Box',18
 REPLACE INTO `item_db_re` VALUES (16413,'FIce_Wing_Ear_Box','FIce Wing Ear Box',18,20,NULL,10,NULL,NULL,NULL,NULL,0xFFFFFFFF,63,2,NULL,NULL,NULL,NULL,NULL,'getitem 5610,1;',NULL,NULL);
 REPLACE INTO `item_db_re` VALUES (16414,'Turtle_Hat_Box','Turtle Hat Box',18,20,NULL,10,NULL,NULL,NULL,NULL,0xFFFFFFFF,63,2,NULL,NULL,NULL,NULL,NULL,'getitem 5611,1;',NULL,NULL);
 REPLACE INTO `item_db_re` VALUES (16415,'FTurtle_Hat_Box','FTurtle Hat Box',18,20,NULL,10,NULL,NULL,NULL,NULL,0xFFFFFFFF,63,2,NULL,NULL,NULL,NULL,NULL,'getitem 5611,1;',NULL,NULL);
-#16418,Giant_Fly_Wing_Box_500
-#16419,Greed_Scroll_30_Box
-#16420,Adventurer_Pack
-#16421,Written_Oath_Of_Marriage_Box
-#16422,Baphomet_Horns_Box
-#16423,Episode_13.1_Key_Package
-#16424,Executioner_Box
-#16425,Cutlas_Box
-#16426,Moonlight_Dagger_Box
-#16427,Wrench_Box
-#16428,Solar_Sword_Box
-#16429,Tomahawk_Box
-#16430,Rudra_Bow_Box
-#16431,Pole_Axe_Box
+REPLACE INTO `item_db_re` VALUES (16418,'Giant_Fly_Wing_Box_500','Giant Fly Wing Box 500',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'getitem 12212,500;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16419,'Greed_Scroll_Box_30','Greed Scroll Box 30',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'getitem 14529,30;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16420,'Adventurer_Pack','Adventurer Pack',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'getitem 12208,10; getitem 12210,10; getitem 12216,20; getitem 12215,20; getitem 7621,10; getitem 12209,10; getitem 12211,5;  getitem 12450,10; getitem 12448,10;  getitem 12446,10;  getitem 12206,10; getitem 12445,10; getitem 12447,10;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16421,'Written_Oath_Of_Marriage_Box','Written Oath Of Marriage Box',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'getitem 6026,1;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16422,'Magestic_Goat_Box','Magestic Goat Box',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'rentitem 5280,604800;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16423,'Episode_13.1_Key_Package','Episode 13.1 Key Package',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'getitem 7782,1; getitem 12208,2; getitem 14582,10;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16424,'Executioner_Box','Executioner Box',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'rentitem 1174,604800;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16425,'Cutlus_Box','Cutlus Box',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'rentitem 13402,604800;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16426,'Moonlight_Dagger_Box','Moonlight Dagger Box',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'rentitem 13026,604800;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16427,'Wrench_Box','Wrench Box',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'rentitem 1534,604800;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16428,'Solar_Sword_Box','Solar Sword Box',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'rentitem 13403,604800;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16429,'Tomahawk_Box','Tomahawk Box',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'rentitem 1374,604800;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16430,'Rudra_Bow_Box','Rudra Bow Box',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'rentitem 1729,604800;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (16431,'Pole_Axe_Box','Pole Axe Box',2,20,10,1,NULL,NULL,NULL,NULL,0xFFFFFFFF,7,2,NULL,NULL,NULL,NULL,NULL,'rentitem 1419,604800;',NULL,NULL);
 REPLACE INTO `item_db_re` VALUES (16436,'Libra_Crown_Box','Libra Crown Box',18,20,NULL,10,NULL,NULL,NULL,NULL,0xFFFFFFFF,63,2,NULL,NULL,NULL,NULL,NULL,'getitem 5662,1;',NULL,NULL);
 #16437,Libra_Crown_Box
 REPLACE INTO `item_db_re` VALUES (16438,'Libra_Diadem_Box','Libra Diadem Box',18,20,NULL,10,NULL,NULL,NULL,NULL,0xFFFFFFFF,63,2,NULL,NULL,NULL,NULL,NULL,'getitem 5663,1;',NULL,NULL);
@@ -8082,7 +8082,7 @@ REPLACE INTO `item_db_re` VALUES (18501,'Cheer_Scarf8','Cheer Scarf8',5,0,NULL,0
 REPLACE INTO `item_db_re` VALUES (18502,'Cheer_Scarf10','Cheer Scarf10',5,0,NULL,0,NULL,0,NULL,0,0xFFFFFFFF,63,2,1,NULL,'1',0,369,'bonus2 bExpAddRace,RC_Boss,100; bonus2 bExpAddRace,RC_NonBoss,100;',NULL,NULL);
 REPLACE INTO `item_db_re` VALUES (18503,'Majestic_Devil','Small Devil Horns',5,20,NULL,100,NULL,2,NULL,0,0xFFFFFFFF,63,2,512,NULL,'1',0,562,'bonus bAtkRate,5; bonus bMatkRate,5; bonus bMaxHPrate,10; bonus bMaxSPrate,10;',NULL,NULL);
 REPLACE INTO `item_db_re` VALUES (18504,'Anubis_Helm_J','Anubis Helm J',5,20,NULL,1000,NULL,0,NULL,0,0xFFFFFFFF,63,2,769,NULL,'70',0,485,'bonus bMdefRate,-50; bonus bDefRate,-50; bonus5 bAutoSpellWhenHit,"NPC_WIDESTONE",2,10,BF_WEAPON|BF_MAGIC,0;',NULL,NULL);
-REPLACE INTO `item_db_re` VALUES (18505,'Umbala_Spirit','Umbala Spirit',5,0,NULL,200,NULL,1,NULL,1,0xFFFFFFFF,63,2,1,NULL,'30',0,675,'bonus bVit,1; bonus bMaxHPrate,1; bonus2 bAddMonsterDropItem,517,500; bonus2 bAddItemHealRate,517,25;',NULL,NULL);
+REPLACE INTO `item_db_re` VALUES (18505,'Umbala_Spirit','Umbala Spirit',5,0,NULL,200,NULL,1,NULL,0,0xFFFFFFFF,63,2,1,NULL,'30',0,675,'bonus bVit,1; bonus bMaxHPrate,1; bonus2 bAddMonsterDropItem,517,500; bonus2 bAddItemHealRate,517,25;',NULL,NULL);
 REPLACE INTO `item_db_re` VALUES (18506,'Hattah_Black','Hattah Black',5,12000,NULL,4000,NULL,2,NULL,1,0xFFFFFFFF,63,2,769,NULL,'1',1,676,NULL,NULL,NULL);
 REPLACE INTO `item_db_re` VALUES (18507,'Elven_Ears_','Elven Ears',5,20,NULL,100,NULL,0,NULL,1,0xFFFFFFFE,63,2,512,NULL,'70',0,73,NULL,NULL,NULL);
 REPLACE INTO `item_db_re` VALUES (18508,'Garuda_Hat','Garuda Hat',5,20,NULL,100,NULL,4,NULL,1,0xFFFFFFFE,63,2,256,NULL,'30',1,677,'bonus bLuk,5; bonus bMdef,3; bonus2 bSubEle,Ele_Neutral,5; bonus2 bSubEle,Ele_Fire,5; bonus2 bSubEle,Ele_Water,5; bonus2 bSubEle,Ele_Wind,5; bonus2 bSubEle,Ele_Earth,5; bonus2 bSubEle,Ele_Dark,5; bonus2 bSubEle,Ele_Holy,5; bonus2 bSubEle,Ele_Ghost,5; bonus bHit,10; bonus bDelayRate,-5; if(getrefine()>=7) bonus2 bAddMonsterDropItem,522,100*(getrefine()-6);',NULL,NULL);
