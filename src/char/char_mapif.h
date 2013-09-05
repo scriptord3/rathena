@@ -1,9 +1,12 @@
-/*
- * File:   char_mapif.h
- * Author: lighta
- *
- * Created on June 15, 2013, 12:05 PM
+/**
+ * @file char_mapif.h
+ * Module purpose is to handle incoming and outgoing requests with map-server.
+ * Licensed under GNU GPL.
+ *  For more information, see LICENCE in the main folder.
+ * @author Athena Dev Teams originally in login.c
+ * @author rAthena Dev Team
  */
+
 
 #ifndef CHAR_MAPIF_H
 #define	CHAR_MAPIF_H

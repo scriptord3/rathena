@@ -56,7 +56,7 @@ struct mmo_char_server {
 	uint16 type;		// 0=normal, 1=maintenance, 2=over 18, 3=paying, 4=P2P
 	uint16 new_;		// should display as 'new'?
 }; // char server data
-extern struct mmo_char_server server[MAX_SERVERS];
+extern struct mmo_char_server ch_server[MAX_SERVERS];
 
 struct client_hash_node {
 	int group_id;				//inferior or egal group to apply restriction

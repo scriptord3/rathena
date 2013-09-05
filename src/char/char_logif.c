@@ -270,9 +270,9 @@ int chlogif_parse_reqaccdata(int fd, struct char_session_data* sd){
 		safestrncpy(sd->birthdate, (const char*)RFIFOP(fd,52), sizeof(sd->birthdate));
 		safestrncpy(sd->pincode, (const char*)RFIFOP(fd,63), sizeof(sd->pincode));
 		sd->pincode_change = (time_t)RFIFOL(fd,68);
-		ARR_FIND( 0, ARRAYLENGTH(server), server_id, server[server_id].fd > 0 && server[server_id].map[0] );
+		ARR_FIND( 0, ARRAYLENGTH(map_server), server_id, map_server[server_id].fd > 0 && map_server[server_id].map[0] );
 		// continued from char_auth_ok...
-		if( server_id == ARRAYLENGTH(server) || //server not online, bugreport:2359
+		if( server_id == ARRAYLENGTH(map_server) || //server not online, bugreport:2359
 			(charserv_config.max_connect_user == 0 && sd->group_id != charserv_config.gm_allow_group) ||
 			( charserv_config.max_connect_user > 0 && char_count_users() >= charserv_config.max_connect_user && sd->group_id != charserv_config.gm_allow_group ) ) {
 			// refuse connection (over populated)
@@ -428,7 +428,7 @@ int chlogif_parse_askkick(int fd, struct char_session_data* sd){
 		{// account is already marked as online!
 			if( character->server > -1 )
 			{	//Kick it from the map server it is on.
-				mapif_disconnectplayer(server[character->server].fd, character->account_id, character->char_id, 2);
+				mapif_disconnectplayer(map_server[character->server].fd, character->account_id, character->char_id, 2);
 				if (character->waiting_disconnect == INVALID_TIMER)
 					character->waiting_disconnect = add_timer(gettick()+AUTH_TIMEOUT, char_chardb_waiting_disconnect, character->account_id, 0);
 			}
@@ -593,7 +593,7 @@ void do_init_chlogif(void) {
 void chlogif_reset(void){
 	int id;
 	// TODO kick everyone out and reset everything or wait for connect and try to reaquire locks [FlavioJS]
-	for( id = 0; id < ARRAYLENGTH(server); ++id )
+	for( id = 0; id < ARRAYLENGTH(map_server); ++id )
 		chmapif_server_reset(id);
 	flush_fifos();
 	exit(EXIT_FAILURE);
@@ -625,8 +625,8 @@ void chlogif_on_ready(void)
 	chlogif_send_acc_tologin(INVALID_TIMER, gettick(), 0, 0);
 
 	// if no map-server already connected, display a message...
-	ARR_FIND( 0, ARRAYLENGTH(server), i, server[i].fd > 0 && server[i].map[0] );
-	if( i == ARRAYLENGTH(server) )
+	ARR_FIND( 0, ARRAYLENGTH(map_server), i, map_server[i].fd > 0 && map_server[i].map[0] );
+	if( i == ARRAYLENGTH(map_server) )
 		ShowStatus("Awaiting maps from map-server.\n");
 }
 

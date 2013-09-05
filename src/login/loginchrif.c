@@ -35,8 +35,8 @@ void logchrif_on_disconnect(int id);
  */
 int logchrif_sendallwos(int sfd, uint8* buf, size_t len) {
 	int i, c;
-	for( i = 0, c = 0; i < ARRAYLENGTH(server); ++i ) {
-		int fd = server[i].fd;
+	for( i = 0, c = 0; i < ARRAYLENGTH(ch_server); ++i ) {
+		int fd = ch_server[i].fd;
 		if( session_isValid(fd) && fd != sfd ){
 			WFIFOHEAD(fd,len);
 			memcpy(WFIFOP(fd,0), buf, len);
@@ -116,7 +116,7 @@ int logchrif_parse_reqauth(int fd, int id,char* ip){
 			// each auth entry can only be used once
 			idb_remove(auth_db, account_id);
 		}else{// authentication not found
-			ShowStatus("Char-server '%s': authentication of the account %d REFUSED (ip: %s).\n", server[id].name, account_id, ip);
+			ShowStatus("Char-server '%s': authentication of the account %d REFUSED (ip: %s).\n", ch_server[id].name, account_id, ip);
 			WFIFOHEAD(fd,25);
 			WFIFOW(fd,0) = 0x2713;
 			WFIFOL(fd,2) = account_id;
@@ -146,9 +146,9 @@ int logchrif_parse_ackusercount(int fd, int id){
 		int users = RFIFOL(fd,2);
 		RFIFOSKIP(fd,6);
 		// how many users on world? (update)
-		if( server[id].users != users ){
-			ShowStatus("set users %s : %d\n", server[id].name, users);
-			server[id].users = users;
+		if( ch_server[id].users != users ){
+			ShowStatus("set users %s : %d\n", ch_server[id].name, users);
+			ch_server[id].users = users;
 		}
 	}
 	return 1;
@@ -174,12 +174,12 @@ int logchrif_parse_updmail(int fd, int id, char* ip){
 		RFIFOSKIP(fd,46);
 
 		if( e_mail_check(email) == 0 )
-			ShowNotice("Char-server '%s': Attempt to create an e-mail on an account with a default e-mail REFUSED - e-mail is invalid (account: %d, ip: %s)\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': Attempt to create an e-mail on an account with a default e-mail REFUSED - e-mail is invalid (account: %d, ip: %s)\n", ch_server[id].name, account_id, ip);
 		else if( !accounts->load_num(accounts, &acc, account_id) || strcmp(acc.email, "a@a.com") == 0 || acc.email[0] == '\0' )
-			ShowNotice("Char-server '%s': Attempt to create an e-mail on an account with a default e-mail REFUSED - account doesn't exist or e-mail of account isn't default e-mail (account: %d, ip: %s).\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': Attempt to create an e-mail on an account with a default e-mail REFUSED - account doesn't exist or e-mail of account isn't default e-mail (account: %d, ip: %s).\n", ch_server[id].name, account_id, ip);
 		else{
 			memcpy(acc.email, email, 40);
-			ShowNotice("Char-server '%s': Create an e-mail on an account with a default e-mail (account: %d, new e-mail: %s, ip: %s).\n", server[id].name, account_id, email, ip);
+			ShowNotice("Char-server '%s': Create an e-mail on an account with a default e-mail (account: %d, new e-mail: %s, ip: %s).\n", ch_server[id].name, account_id, email, ip);
 			// Save
 			accounts->save(accounts, &acc);
 		}
@@ -213,7 +213,7 @@ int logchrif_parse_reqaccdata(int fd, int id, char *ip){
 		RFIFOSKIP(fd,6);
 
 		if( !accounts->load_num(accounts, &acc, account_id) )
-			ShowNotice("Char-server '%s': account %d NOT found (ip: %s).\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': account %d NOT found (ip: %s).\n", ch_server[id].name, account_id, ip);
 		else{
 			safestrncpy(email, acc.email, sizeof(email));
 			expiration_time = acc.expiration_time;
@@ -274,18 +274,18 @@ int logchrif_parse_reqchangemail(int fd, int id, char* ip){
 		RFIFOSKIP(fd, 86);
 
 		if( e_mail_check(actual_email) == 0 )
-			ShowNotice("Char-server '%s': Attempt to modify an e-mail on an account (@email GM command), but actual email is invalid (account: %d, ip: %s)\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': Attempt to modify an e-mail on an account (@email GM command), but actual email is invalid (account: %d, ip: %s)\n", ch_server[id].name, account_id, ip);
 		else if( e_mail_check(new_email) == 0 )
-			ShowNotice("Char-server '%s': Attempt to modify an e-mail on an account (@email GM command) with a invalid new e-mail (account: %d, ip: %s)\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': Attempt to modify an e-mail on an account (@email GM command) with a invalid new e-mail (account: %d, ip: %s)\n", ch_server[id].name, account_id, ip);
 		else if( strcmpi(new_email, "a@a.com") == 0 )
-			ShowNotice("Char-server '%s': Attempt to modify an e-mail on an account (@email GM command) with a default e-mail (account: %d, ip: %s)\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': Attempt to modify an e-mail on an account (@email GM command) with a default e-mail (account: %d, ip: %s)\n", ch_server[id].name, account_id, ip);
 		else if( !accounts->load_num(accounts, &acc, account_id) )
-			ShowNotice("Char-server '%s': Attempt to modify an e-mail on an account (@email GM command), but account doesn't exist (account: %d, ip: %s).\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': Attempt to modify an e-mail on an account (@email GM command), but account doesn't exist (account: %d, ip: %s).\n", ch_server[id].name, account_id, ip);
 		else if( strcmpi(acc.email, actual_email) != 0 )
-			ShowNotice("Char-server '%s': Attempt to modify an e-mail on an account (@email GM command), but actual e-mail is incorrect (account: %d (%s), actual e-mail: %s, proposed e-mail: %s, ip: %s).\n", server[id].name, account_id, acc.userid, acc.email, actual_email, ip);
+			ShowNotice("Char-server '%s': Attempt to modify an e-mail on an account (@email GM command), but actual e-mail is incorrect (account: %d (%s), actual e-mail: %s, proposed e-mail: %s, ip: %s).\n", ch_server[id].name, account_id, acc.userid, acc.email, actual_email, ip);
 		else{
 			safestrncpy(acc.email, new_email, 40);
-			ShowNotice("Char-server '%s': Modify an e-mail on an account (@email GM command) (account: %d (%s), new e-mail: %s, ip: %s).\n", server[id].name, account_id, acc.userid, new_email, ip);
+			ShowNotice("Char-server '%s': Modify an e-mail on an account (@email GM command) (account: %d (%s), new e-mail: %s, ip: %s).\n", ch_server[id].name, account_id, acc.userid, new_email, ip);
 			// Save
 			accounts->save(accounts, &acc);
 		}
@@ -313,11 +313,11 @@ int logchrif_parse_requpdaccstate(int fd, int id, char* ip){
 		RFIFOSKIP(fd,10);
 
 		if( !accounts->load_num(accounts, &acc, account_id) )
-			ShowNotice("Char-server '%s': Error of Status change (account: %d not found, suggested status %d, ip: %s).\n", server[id].name, account_id, state, ip);
+			ShowNotice("Char-server '%s': Error of Status change (account: %d not found, suggested status %d, ip: %s).\n", ch_server[id].name, account_id, state, ip);
 		else if( acc.state == state )
-			ShowNotice("Char-server '%s':  Error of Status change - actual status is already the good status (account: %d, status %d, ip: %s).\n", server[id].name, account_id, state, ip);
+			ShowNotice("Char-server '%s':  Error of Status change - actual status is already the good status (account: %d, status %d, ip: %s).\n", ch_server[id].name, account_id, state, ip);
 		else{
-			ShowNotice("Char-server '%s': Status change (account: %d, new status %d, ip: %s).\n", server[id].name, account_id, state, ip);
+			ShowNotice("Char-server '%s': Status change (account: %d, new status %d, ip: %s).\n", ch_server[id].name, account_id, state, ip);
 
 			acc.state = state;
 			// Save
@@ -362,7 +362,7 @@ int logchrif_parse_reqbanacc(int fd, int id, char* ip){
 		RFIFOSKIP(fd,18);
 
 		if( !accounts->load_num(accounts, &acc, account_id) )
-			ShowNotice("Char-server '%s': Error of ban request (account: %d not found, ip: %s).\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': Error of ban request (account: %d not found, ip: %s).\n", ch_server[id].name, account_id, ip);
 		else{
 			time_t timestamp;
 			struct tm *tmtime;
@@ -379,14 +379,14 @@ int logchrif_parse_reqbanacc(int fd, int id, char* ip){
 			tmtime->tm_sec  = tmtime->tm_sec + sec;
 			timestamp = mktime(tmtime);
 			if (timestamp == -1)
-				ShowNotice("Char-server '%s': Error of ban request (account: %d, invalid date, ip: %s).\n", server[id].name, account_id, ip);
+				ShowNotice("Char-server '%s': Error of ban request (account: %d, invalid date, ip: %s).\n", ch_server[id].name, account_id, ip);
 			else if( timestamp <= time(NULL) || timestamp == 0 )
-				ShowNotice("Char-server '%s': Error of ban request (account: %d, new date unbans the account, ip: %s).\n", server[id].name, account_id, ip);
+				ShowNotice("Char-server '%s': Error of ban request (account: %d, new date unbans the account, ip: %s).\n", ch_server[id].name, account_id, ip);
 			else{
 				uint8 buf[11];
 				char tmpstr[24];
 				timestamp2string(tmpstr, sizeof(tmpstr), timestamp, login_config.date_format);
-				ShowNotice("Char-server '%s': Ban request (account: %d, new final date of banishment: %d (%s), ip: %s).\n", server[id].name, account_id, timestamp, tmpstr, ip);
+				ShowNotice("Char-server '%s': Ban request (account: %d, new final date of banishment: %d (%s), ip: %s).\n", ch_server[id].name, account_id, timestamp, tmpstr, ip);
 
 				acc.unban_time = timestamp;
 
@@ -422,14 +422,14 @@ int logchrif_parse_reqchgsex(int fd, int id, char* ip){
 		RFIFOSKIP(fd,6);
 
 		if( !accounts->load_num(accounts, &acc, account_id) )
-			ShowNotice("Char-server '%s': Error of sex change (account: %d not found, ip: %s).\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': Error of sex change (account: %d not found, ip: %s).\n", ch_server[id].name, account_id, ip);
 		else if( acc.sex == 'S' )
-			ShowNotice("Char-server '%s': Error of sex change - account to change is a Server account (account: %d, ip: %s).\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': Error of sex change - account to change is a Server account (account: %d, ip: %s).\n", ch_server[id].name, account_id, ip);
 		else{
 			unsigned char buf[7];
 			char sex = ( acc.sex == 'M' ) ? 'F' : 'M'; //Change gender
 
-			ShowNotice("Char-server '%s': Sex change (account: %d, new sex %c, ip: %s).\n", server[id].name, account_id, sex, ip);
+			ShowNotice("Char-server '%s': Sex change (account: %d, new sex %c, ip: %s).\n", ch_server[id].name, account_id, sex, ip);
 
 			acc.sex = sex;
 			// Save
@@ -462,11 +462,11 @@ int logchrif_parse_updreg2(int fd, int id, char* ip){
 		int account_id = RFIFOL(fd,4);
 
 		if( !accounts->load_num(accounts, &acc, account_id) )
-			ShowStatus("Char-server '%s': receiving (from the char-server) of account_reg2 (account: %d not found, ip: %s).\n", server[id].name, account_id, ip);
+			ShowStatus("Char-server '%s': receiving (from the char-server) of account_reg2 (account: %d not found, ip: %s).\n", ch_server[id].name, account_id, ip);
 		else{
 			int len;
 			int p;
-			ShowNotice("char-server '%s': receiving (from the char-server) of account_reg2 (account: %d, ip: %s).\n", server[id].name, account_id, ip);
+			ShowNotice("char-server '%s': receiving (from the char-server) of account_reg2 (account: %d, ip: %s).\n", ch_server[id].name, account_id, ip);
 			for( j = 0, p = 13; j < ACCOUNT_REG2_NUM && p < RFIFOW(fd,2); ++j ){
 				sscanf((char*)RFIFOP(fd,p), "%31c%n", acc.account_reg2[j].str, &len);
 				acc.account_reg2[j].str[len]='\0';
@@ -507,11 +507,11 @@ int logchrif_parse_requnbanacc(int fd, int id, char* ip){
 		RFIFOSKIP(fd,6);
 
 		if( !accounts->load_num(accounts, &acc, account_id) )
-			ShowNotice("Char-server '%s': Error of UnBan request (account: %d not found, ip: %s).\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': Error of UnBan request (account: %d not found, ip: %s).\n", ch_server[id].name, account_id, ip);
 		else if( acc.unban_time == 0 )
-			ShowNotice("Char-server '%s': Error of UnBan request (account: %d, no change for unban date, ip: %s).\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': Error of UnBan request (account: %d, no change for unban date, ip: %s).\n", ch_server[id].name, account_id, ip);
 		else{
-			ShowNotice("Char-server '%s': UnBan request (account: %d, ip: %s).\n", server[id].name, account_id, ip);
+			ShowNotice("Char-server '%s': UnBan request (account: %d, ip: %s).\n", ch_server[id].name, account_id, ip);
 			acc.unban_time = 0;
 			accounts->save(accounts, &acc);
 		}
@@ -627,8 +627,8 @@ int logchrif_parse_reqacc2reg(int fd){
 int logchrif_parse_updcharip(int fd, int id){
 	if( RFIFOREST(fd) < 6 )
 		return 0;
-	server[id].ip = ntohl(RFIFOL(fd,2));
-	ShowInfo("Updated IP of Server #%d to %d.%d.%d.%d.\n",id, CONVIP(server[id].ip));
+	ch_server[id].ip = ntohl(RFIFOL(fd,2));
+	ShowInfo("Updated IP of Server #%d to %d.%d.%d.%d.\n",id, CONVIP(ch_server[id].ip));
 	RFIFOSKIP(fd,6);
 	return 1;
 }
@@ -706,8 +706,8 @@ int logchrif_parse(int fd){
 	uint32 ipl;
 	char ip[16];
 
-	ARR_FIND( 0, ARRAYLENGTH(server), id, server[id].fd == fd );
-	if( id == ARRAYLENGTH(server) ){// not a char server
+	ARR_FIND( 0, ARRAYLENGTH(ch_server), id, ch_server[id].fd == fd );
+	if( id == ARRAYLENGTH(ch_server) ){// not a char server
 		ShowDebug("logchrif_parse: Disconnecting invalid session #%d (is not a char-server)\n", fd);
 		set_eof(fd);
 		do_close(fd);
@@ -716,12 +716,12 @@ int logchrif_parse(int fd){
 
 	if( session[fd]->flag.eof ){
 		do_close(fd);
-		server[id].fd = -1;
+		ch_server[id].fd = -1;
 		logchrif_on_disconnect(id);
 		return 0;
 	}
 
-	ipl = server[id].ip;
+	ipl = ch_server[id].ip;
 	ip2str(ipl, ip);
 
 	while( RFIFOREST(fd) >= 2 ){
@@ -765,8 +765,8 @@ int logchrif_parse(int fd){
  * @param id: id of char-serv (should be >0, FIXME)
  */
 void logchrif_server_init(int id) {
-	memset(&server[id], 0, sizeof(server[id]));
-	server[id].fd = -1;
+	memset(&ch_server[id], 0, sizeof(ch_server[id]));
+	ch_server[id].fd = -1;
 }
 
 /**
@@ -774,9 +774,9 @@ void logchrif_server_init(int id) {
  * @param id: id of char-serv (should be >0, FIXME)
  */
 void logchrif_server_destroy(int id){
-	if( server[id].fd != -1 ) {
-		do_close(server[id].fd);
-		server[id].fd = -1;
+	if( ch_server[id].fd != -1 ) {
+		do_close(ch_server[id].fd);
+		ch_server[id].fd = -1;
 	}
 }
 
@@ -796,7 +796,7 @@ void logchrif_server_reset(int id) {
  * @param id: id of char-serv (should be >0, FIXME)
  */
 void logchrif_on_disconnect(int id) {
-	ShowStatus("Char-server '%s' has disconnected.\n", server[id].name);
+	ShowStatus("Char-server '%s' has disconnected.\n", ch_server[id].name);
 	logchrif_server_reset(id);
 }
 
@@ -806,7 +806,7 @@ void logchrif_on_disconnect(int id) {
  */
 void do_init_loginchrif(void){
 	int i;
-	for( i = 0; i < ARRAYLENGTH(server); ++i )
+	for( i = 0; i < ARRAYLENGTH(ch_server); ++i )
 		logchrif_server_init(i);
 
 	// add timer to detect ip address change and perform update
@@ -823,7 +823,7 @@ void do_init_loginchrif(void){
  */
 void do_shutdown_loginchrif(void){
 	int id;
-	for( id = 0; id < ARRAYLENGTH(server); ++id )
+	for( id = 0; id < ARRAYLENGTH(ch_server); ++id )
 		logchrif_server_reset(id);
 }
 
@@ -833,6 +833,6 @@ void do_shutdown_loginchrif(void){
  */
 void do_final_loginchrif(void){
 	int i;
-	for( i = 0; i < ARRAYLENGTH(server); ++i )
+	for( i = 0; i < ARRAYLENGTH(ch_server); ++i )
 		logchrif_server_destroy(i);
 }

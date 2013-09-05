@@ -33,7 +33,7 @@
 
 
 //definition of exported var declared in .h
-struct mmo_char_server server[MAX_SERVERS]; // char server data
+struct mmo_char_server ch_server[MAX_SERVERS]; // char server data
 struct Login_Config login_config;
 DBMap* online_db;
 DBMap* auth_db;

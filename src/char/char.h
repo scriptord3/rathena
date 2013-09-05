@@ -138,7 +138,7 @@ struct mmo_map_server {
 	int users;
 	unsigned short map[MAX_MAP_PER_SERVER];
 };
-extern struct mmo_map_server server[MAX_MAP_SERVERS];
+extern struct mmo_map_server map_server[MAX_MAP_SERVERS];
 
 #define AUTH_TIMEOUT 30000
 struct auth_node {

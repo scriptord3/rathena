@@ -549,9 +549,9 @@ int chclif_parse_maplogin(int fd){
 		char* l_pass = (char*)RFIFOP(fd,26);
 		l_user[23] = '\0';
 		l_pass[23] = '\0';
-		ARR_FIND( 0, ARRAYLENGTH(server), i, server[i].fd <= 0 );
+		ARR_FIND( 0, ARRAYLENGTH(map_server), i, map_server[i].fd <= 0 );
 		if( runflag != CHARSERVER_ST_RUNNING ||
-			i == ARRAYLENGTH(server) ||
+			i == ARRAYLENGTH(map_server) ||
 			strcmp(l_user, charserv_config.userid) != 0 ||
 			strcmp(l_pass, charserv_config.passwd) != 0 )
 		{
@@ -565,11 +565,11 @@ int chclif_parse_maplogin(int fd){
 			WFIFOB(fd,2) = 0;
 			WFIFOSET(fd,3);
 
-			server[i].fd = fd;
-			server[i].ip = ntohl(RFIFOL(fd,54));
-			server[i].port = ntohs(RFIFOW(fd,58));
-			server[i].users = 0;
-			memset(server[i].map, 0, sizeof(server[i].map));
+			map_server[i].fd = fd;
+			map_server[i].ip = ntohl(RFIFOL(fd,54));
+			map_server[i].port = ntohs(RFIFOW(fd,58));
+			map_server[i].users = 0;
+			memset(map_server[i].map, 0, sizeof(map_server[i].map));
 			session[fd]->func_parse = chmapif_parse;
 			session[fd]->flag.server = 1;
 			realloc_fifo(fd, FIFOSIZE_SERVERLINK, FIFOSIZE_SERVERLINK);
@@ -738,8 +738,8 @@ int chclif_parse_charselect(int fd, struct char_session_data* sd,uint32 ipl){
 		if (i < 0 || !cd->last_point.map) {
 			unsigned short j;
 			//First check that there's actually a map server online.
-			ARR_FIND( 0, ARRAYLENGTH(server), j, server[j].fd >= 0 && server[j].map[0] );
-			if (j == ARRAYLENGTH(server)) {
+			ARR_FIND( 0, ARRAYLENGTH(map_server), j, map_server[j].fd >= 0 && map_server[j].map[0] );
+			if (j == ARRAYLENGTH(map_server)) {
 				ShowInfo("Connection Closed. No map servers available.\n");
 				chclif_send_auth_result(fd,1); // 01 = Server closed
 				return 0;
@@ -773,11 +773,11 @@ int chclif_parse_charselect(int fd, struct char_session_data* sd,uint32 ipl){
 
 		//Send NEW auth packet [Kevin]
 		//FIXME: is this case even possible? [ultramage]
-		if ((map_fd = server[i].fd) < 1 || session[map_fd] == NULL)
+		if ((map_fd = map_server[i].fd) < 1 || session[map_fd] == NULL)
 		{
 			ShowError("parse_char: Attempting to write to invalid session %d! Map Server #%d disconnected.\n", map_fd, i);
-			server[i].fd = -1;
-			memset(&server[i], 0, sizeof(struct mmo_map_server));
+			map_server[i].fd = -1;
+			memset(&map_server[i], 0, sizeof(struct mmo_map_server));
 			chclif_send_auth_result(fd,1);  //Send server closed.
 			return 0;
 		}
@@ -788,8 +788,8 @@ int chclif_parse_charselect(int fd, struct char_session_data* sd,uint32 ipl){
 		WFIFOL(fd,2) = cd->char_id;
 		mapindex_getmapname_ext(mapindex_id2name(cd->last_point.map), (char*)WFIFOP(fd,6));
 		subnet_map_ip = lan_subnetcheck(ipl); // Advanced subnet check [LuzZza]
-		WFIFOL(fd,22) = htonl((subnet_map_ip) ? subnet_map_ip : server[i].ip);
-		WFIFOW(fd,26) = ntows(htons(server[i].port)); // [!] LE byte order here [!]
+		WFIFOL(fd,22) = htonl((subnet_map_ip) ? subnet_map_ip : map_server[i].ip);
+		WFIFOW(fd,26) = ntows(htons(map_server[i].port)); // [!] LE byte order here [!]
 		WFIFOSET(fd,28);
 
 		// create temporary auth entry

@@ -72,8 +72,8 @@ static void logclif_auth_ok(struct login_session_data* sd) {
 	}
 
 	server_num = 0;
-	for( i = 0; i < ARRAYLENGTH(server); ++i )
-		if( session_isActive(server[i].fd) )
+	for( i = 0; i < ARRAYLENGTH(ch_server); ++i )
+		if( session_isActive(ch_server[i].fd) )
 			server_num++;
 
 	if( server_num == 0 )
@@ -124,16 +124,16 @@ static void logclif_auth_ok(struct login_session_data* sd) {
 	memset(WFIFOP(fd,20), 0, 24);
 	WFIFOW(fd,44) = 0; // unknown
 	WFIFOB(fd,46) = sex_str2num(sd->sex);
-	for( i = 0, n = 0; i < ARRAYLENGTH(server); ++i ) {
-		if( !session_isValid(server[i].fd) )
+	for( i = 0, n = 0; i < ARRAYLENGTH(ch_server); ++i ) {
+		if( !session_isValid(ch_server[i].fd) )
 			continue;
 		subnet_char_ip = lan_subnetcheck(ip); // Advanced subnet check [LuzZza]
-		WFIFOL(fd,47+n*32) = htonl((subnet_char_ip) ? subnet_char_ip : server[i].ip);
-		WFIFOW(fd,47+n*32+4) = ntows(htons(server[i].port)); // [!] LE byte order here [!]
-		memcpy(WFIFOP(fd,47+n*32+6), server[i].name, 20);
-		WFIFOW(fd,47+n*32+26) = server[i].users;
-		WFIFOW(fd,47+n*32+28) = server[i].type;
-		WFIFOW(fd,47+n*32+30) = server[i].new_;
+		WFIFOL(fd,47+n*32) = htonl((subnet_char_ip) ? subnet_char_ip : ch_server[i].ip);
+		WFIFOW(fd,47+n*32+4) = ntows(htons(ch_server[i].port)); // [!] LE byte order here [!]
+		memcpy(WFIFOP(fd,47+n*32+6), ch_server[i].name, 20);
+		WFIFOW(fd,47+n*32+26) = ch_server[i].users;
+		WFIFOW(fd,47+n*32+28) = ch_server[i].type;
+		WFIFOW(fd,47+n*32+30) = ch_server[i].new_;
 		n++;
 	}
 	WFIFOSET(fd,47+32*server_num);
@@ -429,17 +429,17 @@ static int logclif_parse_reqcharconnec(int fd, struct login_session_data *sd, ch
 		if( runflag == LOGINSERVER_ST_RUNNING &&
 			result == -1 &&
 			sd->sex == 'S' &&
-			sd->account_id >= 0 && sd->account_id < ARRAYLENGTH(server) &&
-			!session_isValid(server[sd->account_id].fd) )
+			sd->account_id >= 0 && sd->account_id < ARRAYLENGTH(ch_server) &&
+			!session_isValid(ch_server[sd->account_id].fd) )
 		{
 			ShowStatus("Connection of the char-server '%s' accepted.\n", server_name);
-			safestrncpy(server[sd->account_id].name, server_name, sizeof(server[sd->account_id].name));
-			server[sd->account_id].fd = fd;
-			server[sd->account_id].ip = server_ip;
-			server[sd->account_id].port = server_port;
-			server[sd->account_id].users = 0;
-			server[sd->account_id].type = type;
-			server[sd->account_id].new_ = new_;
+			safestrncpy(ch_server[sd->account_id].name, server_name, sizeof(ch_server[sd->account_id].name));
+			ch_server[sd->account_id].fd = fd;
+			ch_server[sd->account_id].ip = server_ip;
+			ch_server[sd->account_id].port = server_port;
+			ch_server[sd->account_id].users = 0;
+			ch_server[sd->account_id].type = type;
+			ch_server[sd->account_id].new_ = new_;
 
 			session[fd]->func_parse = logchrif_parse;
 			session[fd]->flag.server = 1;

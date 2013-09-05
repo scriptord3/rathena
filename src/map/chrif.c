@@ -545,7 +545,7 @@ void chrif_on_ready(void) {
 
 
 /*==========================================
- *
+ * Received the Ack of
  *------------------------------------------*/
 int chrif_sendmapack(int fd) {
 

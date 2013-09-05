@@ -1,5 +1,11 @@
-// Copyright (c) rAthena Dev Teams - Licensed under GNU GPL
-// For more information, see LICENCE in the main folder
+/**
+ * @file char_mapif.c
+ * Module purpose is to handle incoming and outgoing requests with map-server.
+ * Licensed under GNU GPL.
+ *  For more information, see LICENCE in the main folder.
+ * @author Athena Dev Teams originally in login.c
+ * @author rAthena Dev Team
+ */
 
 #include "../common/socket.h"
 #include "../common/sql.h"
@@ -14,13 +20,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * Packet send to all map-servers, attach to ourself
+ * @param buf: packet to send in form of an array buffer
+ * @param len: size of packet
+ * @return : the number of map-serv the packet was sent to
+ */
 int chmapif_sendall(unsigned char *buf, unsigned int len){
 	int i, c;
 
 	c = 0;
-	for(i = 0; i < ARRAYLENGTH(server); i++) {
+	for(i = 0; i < ARRAYLENGTH(map_server); i++) {
 		int fd;
-		if ((fd = server[i].fd) > 0) {
+		if ((fd = map_server[i].fd) > 0) {
 			WFIFOHEAD(fd,len);
 			memcpy(WFIFOP(fd,0), buf, len);
 			WFIFOSET(fd,len);
@@ -31,13 +43,20 @@ int chmapif_sendall(unsigned char *buf, unsigned int len){
 	return c;
 }
 
+/**
+ * Packet send to all map-servers, except one. (wos: without our self) attach to ourself
+ * @param sfd: fd to discard sending to
+ * @param buf: packet to send in form of an array buffer
+ * @param len: size of packet
+ * @return : the number of map-serv the packet was sent to
+ */
 int chmapif_sendallwos(int sfd, unsigned char *buf, unsigned int len){
 	int i, c;
 
 	c = 0;
-	for(i = 0; i < ARRAYLENGTH(server); i++) {
+	for(i = 0; i < ARRAYLENGTH(map_server); i++) {
 		int fd;
-		if ((fd = server[i].fd) > 0 && fd != sfd) {
+		if ((fd = map_server[i].fd) > 0 && fd != sfd) {
 			WFIFOHEAD(fd,len);
 			memcpy(WFIFOP(fd,0), buf, len);
 			WFIFOSET(fd,len);
@@ -48,11 +67,18 @@ int chmapif_sendallwos(int sfd, unsigned char *buf, unsigned int len){
 	return c;
 }
 
+/**
+ * Packet send to all char-servers, except one. (wos: without our self)
+ * @param fd: fd to send packet too
+ * @param buf: packet to send in form of an array buffer
+ * @param len: size of packet
+ * @return : the number of map-serv the packet was sent to (O|1)
+ */
 int chmapif_send(int fd, unsigned char *buf, unsigned int len){
 	if (fd >= 0) {
 		int i;
-		ARR_FIND( 0, ARRAYLENGTH(server), i, fd == server[i].fd );
-		if( i < ARRAYLENGTH(server) )
+		ARR_FIND( 0, ARRAYLENGTH(map_server), i, fd == map_server[i].fd );
+		if( i < ARRAYLENGTH(map_server) )
 		{
 			WFIFOHEAD(fd,len);
 			memcpy(WFIFOP(fd,0), buf, len);
@@ -65,7 +91,13 @@ int chmapif_send(int fd, unsigned char *buf, unsigned int len){
 
 
 
-// Send map-servers the fame ranking lists
+/**
+ * Send map-servers fames ranking lists
+ *  Defaut fame list are 32B, (id+point+names)
+ *  S <len>.W <len bs + alchi>.W <len bs>.W <smith_rank>?B <alchi_rank>?B <taek_rank>?B
+ * @param fd: fd to send packet too (map-serv) if -1 send to all
+ * @return : 0 success
+ */
 int chmapif_send_fame_list(int fd){
 	int i, len = 8;
 	unsigned char buf[32000];
@@ -101,6 +133,13 @@ int chmapif_send_fame_list(int fd){
 	return 0;
 }
 
+/**
+ * Send to map-servers the updated fame ranking lists
+ *  We actually just send this one when we only need to update rankpoint but pos didn't change
+ * @param type: ranking type
+ * @param index: position in the ranking
+ * @param fame: number of points
+ */
 void chmapif_update_fame_list(int type, int index, int fame) {
 	unsigned char buf[8];
 	WBUFW(buf,0) = 0x2b22;
@@ -110,6 +149,10 @@ void chmapif_update_fame_list(int type, int index, int fame) {
 	chmapif_sendall(buf, 8);
 }
 
+/**
+ * Send to map-servers the users count on this char-serv, (meaning the total of all mapserv)
+ * @param users: number of players on this char-serv
+ */
 void chmapif_sendall_playercount(int users){
 	uint8 buf[6];
 	// send number of players to all map-servers
@@ -118,25 +161,34 @@ void chmapif_sendall_playercount(int users){
 	chmapif_sendall(buf,6);
 }
 
+/**
+ * This function is called when the map-serv initialise is chrif interface.
+ * Map-serv sent us his map indexes so we can transfert a player from a map-serv to another when necessary
+ * We reply by sending back the char_serv_wisp_name  fame list and
+ * @param fd: wich fd to parse from
+ * @param id: wich map_serv id
+ * @return : 0 not enough data received, 1 success
+ */
 int chmapif_parse_getmapname(int fd, int id){
 	int j = 0, i = 0;
 	if (RFIFOREST(fd) < 4 || RFIFOREST(fd) < RFIFOW(fd,2))
 		return 0;
 
-	memset(server[id].map, 0, sizeof(server[id].map));
+	//Retain what map-index that map-serv contains
+	memset(map_server[id].map, 0, sizeof(map_server[id].map));
 	for(i = 4; i < RFIFOW(fd,2); i += 4) {
-		server[id].map[j] = RFIFOW(fd,i);
+		map_server[id].map[j] = RFIFOW(fd,i);
 		j++;
 	}
 
 	ShowStatus("Map-Server %d connected: %d maps, from IP %d.%d.%d.%d port %d.\n",
-				id, j, CONVIP(server[id].ip), server[id].port);
+				id, j, CONVIP(map_server[id].ip), map_server[id].port);
 	ShowStatus("Map-server %d loading complete.\n", id);
 
 	// send name for wisp to player
 	WFIFOHEAD(fd, 3 + NAME_LENGTH);
 	WFIFOW(fd,0) = 0x2afb;
-	WFIFOB(fd,2) = 0;
+	WFIFOB(fd,2) = 0; //0 succes, 1:failure
 	memcpy(WFIFOP(fd,3), charserv_config.wisp_server_name, NAME_LENGTH);
 	WFIFOSET(fd,3+NAME_LENGTH);
 
@@ -151,22 +203,22 @@ int chmapif_parse_getmapname(int fd, int id){
 			// Transmitting maps information to the other map-servers
 			WBUFW(buf,0) = 0x2b04;
 			WBUFW(buf,2) = j * 4 + 10;
-			WBUFL(buf,4) = htonl(server[id].ip);
-			WBUFW(buf,8) = htons(server[id].port);
+			WBUFL(buf,4) = htonl(map_server[id].ip);
+			WBUFW(buf,8) = htons(map_server[id].port);
 			memcpy(WBUFP(buf,10), RFIFOP(fd,4), j * 4);
 			chmapif_sendallwos(fd, buf, WBUFW(buf,2));
 		}
 		// Transmitting the maps of the other map-servers to the new map-server
-		for(x = 0; x < ARRAYLENGTH(server); x++) {
-			if (server[x].fd > 0 && x != id) {
-				WFIFOHEAD(fd,10 +4*ARRAYLENGTH(server[x].map));
+		for(x = 0; x < ARRAYLENGTH(map_server); x++) {
+			if (map_server[x].fd > 0 && x != id) {
+				WFIFOHEAD(fd,10 +4*ARRAYLENGTH(map_server[x].map));
 				WFIFOW(fd,0) = 0x2b04;
-				WFIFOL(fd,4) = htonl(server[x].ip);
-				WFIFOW(fd,8) = htons(server[x].port);
+				WFIFOL(fd,4) = htonl(map_server[x].ip);
+				WFIFOW(fd,8) = htons(map_server[x].port);
 				j = 0;
-				for(i = 0; i < ARRAYLENGTH(server[x].map); i++)
-					if (server[x].map[i])
-						WFIFOW(fd,10+(j++)*4) = server[x].map[i];
+				for(i = 0; i < ARRAYLENGTH(map_server[x].map); i++)
+					if (map_server[x].map[i])
+						WFIFOW(fd,10+(j++)*4) = map_server[x].map[i];
 				if (j > 0) {
 					WFIFOW(fd,2) = j * 4 + 10;
 					WFIFOSET(fd,WFIFOW(fd,2));
@@ -178,7 +230,13 @@ int chmapif_parse_getmapname(int fd, int id){
 	return 1;
 }
 
-int chmapif_parse_askscdata(int fd, int id){
+/**
+ * Map-serv requesting to send the list of sc_data the player has saved
+ * @author [Skotlex]
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_askscdata(int fd){
 	if (RFIFOREST(fd) < 10)
 		return 0;
 	{
@@ -232,17 +290,29 @@ int chmapif_parse_askscdata(int fd, int id){
 	return 1;
 }
 
+/**
+ * Map-serv sent us his new users count, updating info
+ * @param fd: wich fd to parse from
+ * @param id: wich map_serv id
+ * @return : 0 not enough data received, 1 success
+ */
 int chmapif_parse_getusercount(int fd, int id){
 	if (RFIFOREST(fd) < 4)
 		return 0;
-	if (RFIFOW(fd,2) != server[id].users) {
-		server[id].users = RFIFOW(fd,2);
-		ShowInfo("User Count: %d (Server: %d)\n", server[id].users, id);
+	if (RFIFOW(fd,2) != map_server[id].users) {
+		map_server[id].users = RFIFOW(fd,2);
+		ShowInfo("User Count: %d (Server: %d)\n", map_server[id].users, id);
 	}
 	RFIFOSKIP(fd, 4);
 	return 1;
 }
 
+/**
+ * Map-serv sent us all his users info, (aid and cid) so we can update online_char_db
+ * @param fd: wich fd to parse from
+ * @param id: wich map_serv id
+ * @return : 0 not enough data received, 1 success
+ */
 int chmapif_parse_regmapuser(int fd, int id){
 	int i;
 	if (RFIFOREST(fd) < 6 || RFIFOREST(fd) < RFIFOW(fd,2))
@@ -253,9 +323,9 @@ int chmapif_parse_regmapuser(int fd, int id){
 		struct online_char_data* character;
 		DBMap* online_char_db = char_get_onlinedb();
 
-		server[id].users = RFIFOW(fd,4);
+		map_server[id].users = RFIFOW(fd,4);
 		online_char_db->foreach(online_char_db,char_db_setoffline,id); //Set all chars from this server as 'unknown'
-		for(i = 0; i < server[id].users; i++) {
+		for(i = 0; i < map_server[id].users; i++) {
 			aid = RFIFOL(fd,6+i*8);
 			cid = RFIFOL(fd,6+i*8+4);
 			character = idb_ensure(online_char_db, aid, char_create_online_data);
@@ -263,7 +333,7 @@ int chmapif_parse_regmapuser(int fd, int id){
 			{
 				ShowNotice("Set map user: Character (%d:%d) marked on map server %d, but map server %d claims to have (%d:%d) online!\n",
 					character->account_id, character->char_id, character->server, id, aid, cid);
-				mapif_disconnectplayer(server[character->server].fd, character->account_id, character->char_id, 2);
+				mapif_disconnectplayer(map_server[character->server].fd, character->account_id, character->char_id, 2);
 			}
 			character->server = id;
 			character->char_id = cid;
@@ -274,6 +344,13 @@ int chmapif_parse_regmapuser(int fd, int id){
 	return 1;
 }
 
+/**
+ * Map-serv request to save mmo_char_status in sql
+ * Receive character data from map-server for saving
+ * @param fd: wich fd to parse from
+ * @param id: wich map_serv id
+ * @return : 0 not enough data received, 1 success
+ */
 int chmapif_parse_reqsavechar(int fd, int id){
 	if (RFIFOREST(fd) < 4 || RFIFOREST(fd) < RFIFOW(fd,2))
 			return 0;
@@ -315,7 +392,12 @@ int chmapif_parse_reqsavechar(int fd, int id){
 	return 1;
 }
 
-int chmapif_parse_authok(int fd, int id){
+/**
+ * Player Requesting char-select from map_serv
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_authok(int fd){
 	if( RFIFOREST(fd) < 19 )
 		return 0;
 	else{
@@ -369,7 +451,12 @@ int chmapif_parse_authok(int fd, int id){
 	return 1;
 }
 
-int chmapif_parse_reqchangemapserv(int fd, int id){
+/**
+ * Player requesting to change map-serv
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_reqchangemapserv(int fd){
 	if (RFIFOREST(fd) < 39)
 		return 0;
 	{
@@ -380,7 +467,7 @@ int chmapif_parse_reqchangemapserv(int fd, int id){
 
 		map_id = char_search_mapserver(RFIFOW(fd,18), ntohl(RFIFOL(fd,24)), ntohs(RFIFOW(fd,28))); //Locate mapserver by ip and port.
 		if (map_id >= 0)
-			map_fd = server[map_id].fd;
+			map_fd = map_server[map_id].fd;
 		//Char should just had been saved before this packet, so this should be safe. [Skotlex]
 		char_data = (struct mmo_charstatus*)uidb_get(char_db_,RFIFOL(fd,14));
 		if (char_data == NULL) {	//Really shouldn't happen.
@@ -439,7 +526,14 @@ int chmapif_parse_reqchangemapserv(int fd, int id){
 	return 1;
 }
 
-int chmapif_parse_askrmfriend(int fd, int id){
+/**
+ * Player requesting to remove friend from list
+ * Remove RFIFOL(fd,6) (friend_id) from RFIFOL(fd,2) (char_id) friend list
+ * @author [Ind]
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_askrmfriend(int fd){
 	if (RFIFOREST(fd) < 10)
 		return 0;
 	{
@@ -456,7 +550,13 @@ int chmapif_parse_askrmfriend(int fd, int id){
 	return 1;
 }
 
-int chmapif_parse_reqcharname(int fd, int id){
+/**
+ * Lookup to search if that char_id correspond to a name.
+ * Comming from map-serv to search on other
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_reqcharname(int fd){
 	if (RFIFOREST(fd) < 6)
 		return 0;
 
@@ -470,10 +570,13 @@ int chmapif_parse_reqcharname(int fd, int id){
 	return 1;
 }
 
-/*
- * Forward email update request to loginserv
+/**
+ * Forward an email update request to login-serv
+ * Map server send information to change an email of an account -> login-server
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
  */
-int chmapif_parse_reqnewemail(int fd, int id){
+int chmapif_parse_reqnewemail(int fd){
 	if (RFIFOREST(fd) < 86)
 		return 0;
 	if (login_fd > 0) { // don't send request if no login-server
@@ -486,7 +589,12 @@ int chmapif_parse_reqnewemail(int fd, int id){
 	return 1;
 }
 
-int chmapif_parse_fwlog_changestatus(int fd, int id){
+/**
+ * Forward a change of status for account to login-serv
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_fwlog_changestatus(int fd){
 	if (RFIFOREST(fd) < 44)
 		return 0;
 	{
@@ -590,7 +698,13 @@ int chmapif_parse_fwlog_changestatus(int fd, int id){
 	return 1;
 }
 
-int chmapif_parse_updfamelist(int fd, int id){
+/**
+ * Received an update of fame point  for char_id cid
+ * Update the list associated and transmit the new ranking
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_updfamelist(int fd){
 	if (RFIFOREST(fd) < 11)
 		return 0;
 	{
@@ -644,6 +758,12 @@ int chmapif_parse_updfamelist(int fd, int id){
 	return 1;
 }
 
+/**
+ * Transmit the acknolegement of divorce of partner_id1 and partner_id2
+ * Update the list associated and transmit the new ranking
+ * @param partner_id1: char id1 divorced
+ * @param partner_id2: char id2 divorced
+ */
 void chmapif_send_ackdivorce(int partner_id1, int partner_id2){
 	unsigned char buf[64]; //buf 10 ?
 	WBUFW(buf,0) = 0x2b12;
@@ -652,7 +772,12 @@ void chmapif_send_ackdivorce(int partner_id1, int partner_id2){
 	chmapif_sendall(buf,10);
 }
 
-int chmapif_parse_reqdivorce(int fd, int id){
+/**
+ * Received a divorce request
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_reqdivorce(int fd){
 	if( RFIFOREST(fd) < 10 )
 		return 0;
 	char_divorce_char_sql(RFIFOL(fd,2), RFIFOL(fd,6));
@@ -660,7 +785,13 @@ int chmapif_parse_reqdivorce(int fd, int id){
 	return 1;
 }
 
-int chmapif_parse_updmapinfo(int fd, int id){
+/**
+ * Receive rates of this map index
+ * @author [Wizputer]
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_updmapinfo(int fd){
 	if( RFIFOREST(fd) < 14 )
 		return 0;
 	{
@@ -674,7 +805,13 @@ int chmapif_parse_updmapinfo(int fd, int id){
 	return 1;
 }
 
-int chmapif_parse_setcharoffline(int fd, int id){
+/**
+ *  Character disconnected set online 0
+ * @author [Wizputer]
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_setcharoffline(int fd){
 	if (RFIFOREST(fd) < 6)
 		return 0;
 	char_set_char_offline(RFIFOL(fd,2),RFIFOL(fd,6));
@@ -682,12 +819,27 @@ int chmapif_parse_setcharoffline(int fd, int id){
 	return 1;
 }
 
+
+/**
+ * Reset all chars to offline
+ * @author [Wizputer]
+ * @param fd: wich fd to parse from
+ * @param id: wich map_serv id
+ * @return : 0 not enough data received, 1 success
+ */
 int chmapif_parse_setalloffline(int fd, int id){
 	char_set_all_offline(id);
 	RFIFOSKIP(fd,2);
 	return 1;
 }
 
+/**
+ * Character set online
+ * @author [Wizputer]
+ * @param fd: wich fd to parse from
+ * @param id: wich map_serv id
+ * @return : 0 not enough data received, 1 success
+ */
 int chmapif_parse_setcharonline(int fd, int id){
 	if (RFIFOREST(fd) < 10)
 		return 0;
@@ -696,7 +848,14 @@ int chmapif_parse_setcharonline(int fd, int id){
 	return 1;
 }
 
-int chmapif_parse_reqfamelist(int fd, int id){
+/**
+ * Build and send fame ranking lists
+ * @author [DracoRPG]
+ * @param fd: wich fd to parse from
+ * @param id: wich map_serv id
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_reqfamelist(int fd){
 	if (RFIFOREST(fd) < 2)
 		return 0;
 	char_read_fame_list();
@@ -705,7 +864,13 @@ int chmapif_parse_reqfamelist(int fd, int id){
 	return 1;
 }
 
-int chmapif_parse_save_scdata(int fd, int id){
+/**
+ * Request to save status change data.s
+ * @author [Skotlex]
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_save_scdata(int fd){
 	if (RFIFOREST(fd) < 4 || RFIFOREST(fd) < RFIFOW(fd,2))
 		return 0;
 	{
@@ -742,7 +907,12 @@ int chmapif_parse_save_scdata(int fd, int id){
 	return 1;
 }
 
-int chmapif_parse_keepalive(int fd, int id){
+/**
+ * map-server keep alive packet, awnser back map that we alive as well
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_keepalive(int fd){
 	WFIFOHEAD(fd,2);
 	WFIFOW(fd,0) = 0x2b24;
 	WFIFOSET(fd,2);
@@ -750,6 +920,11 @@ int chmapif_parse_keepalive(int fd, int id){
 	return 1;
 }
 
+/**
+ * auth request from map-server
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
 int chmapif_parse_reqauth(int fd, int id){
 	if (RFIFOREST(fd) < 19)
 		return 0;
@@ -822,15 +997,25 @@ int chmapif_parse_reqauth(int fd, int id){
 	return 1;
 }
 
+/**
+ * ip address update
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
 int chmapif_parse_updmapip(int fd, int id){
 	if (RFIFOREST(fd) < 6) return 0;
-	server[id].ip = ntohl(RFIFOL(fd, 2));
-	ShowInfo("Updated IP address of map-server #%d to %d.%d.%d.%d.\n", id, CONVIP(server[id].ip));
+	map_server[id].ip = ntohl(RFIFOL(fd, 2));
+	ShowInfo("Updated IP address of map-server #%d to %d.%d.%d.%d.\n", id, CONVIP(map_server[id].ip));
 	RFIFOSKIP(fd,6);
 	return 1;
 }
 
-int chmapif_parse_fw_configstats(int fd, int id){
+/**
+ *  transmit emu usage for anom stats
+ * @param fd: wich fd to parse from
+ * @return : 0 not enough data received, 1 success
+ */
+int chmapif_parse_fw_configstats(int fd){
 	if( RFIFOREST(fd) < RFIFOW(fd,4) )
 		return 0;/* packet wasn't fully received yet (still fragmented) */
 	else {
@@ -853,10 +1038,17 @@ int chmapif_parse_fw_configstats(int fd, int id){
 	return 1;
 }
 
+/**
+ * Entry point from map-server to char-server.
+ * Function that checks incoming command, then splits it to the correct handler.
+ * If not found any hander here transmis packet to inter
+ * @param fd: file descriptor to parse, (link to map-serv)
+ * @return 0=invalid server,marked for disconnection,unknow packet; 1=success
+ */
 int chmapif_parse(int fd){
 	int id; //mapserv id
-	ARR_FIND( 0, ARRAYLENGTH(server), id, server[id].fd == fd );
-	if( id == ARRAYLENGTH(server) )
+	ARR_FIND( 0, ARRAYLENGTH(map_server), id, map_server[id].fd == fd );
+	if( id == ARRAYLENGTH(map_server) )
 	{// not a map server
 		ShowDebug("parse_frommap: Disconnecting invalid session #%d (is not a map-server)\n", fd);
 		do_close(fd);
@@ -865,58 +1057,36 @@ int chmapif_parse(int fd){
 	if( session[fd]->flag.eof )
 	{
 		do_close(fd);
-		server[id].fd = -1;
+		map_server[id].fd = -1;
 		chmapif_on_disconnect(id);
 		return 0;
 	}
 
 	while(RFIFOREST(fd) >= 2){
 		switch(RFIFOW(fd,0)){
-		// Receiving map names list from the map-server
 		case 0x2afa: chmapif_parse_getmapname(fd,id); break;
-		//Packet command is now used for sc_data request. [Skotlex]
-		case 0x2afc: chmapif_parse_askscdata(fd,id); break;
-		//MAP user count
+		case 0x2afc: chmapif_parse_askscdata(fd); break;
 		case 0x2afe: chmapif_parse_getusercount(fd,id); break; //get nb user
 		case 0x2aff: chmapif_parse_regmapuser(fd,id); break; //register users
-		// Receive character data from map-server for saving
 		case 0x2b01: chmapif_parse_reqsavechar(fd,id); break;
-		// req char selection;
-		case 0x2b02: chmapif_parse_authok(fd,id); break;
-		// request "change map server"
-		case 0x2b05: chmapif_parse_reqchangemapserv(fd,id); break;
-		// Remove RFIFOL(fd,6) (friend_id) from RFIFOL(fd,2) (char_id) friend list [Ind]
-		case 0x2b07: chmapif_parse_askrmfriend(fd,id); break;
-		// char name request
-		case 0x2b08: chmapif_parse_reqcharname(fd,id); break;
-		// Map server send information to change an email of an account -> login-server
-		case 0x2b0c: chmapif_parse_reqnewemail(fd,id); break;
-		// Request from map-server to change an account's status (will just be forwarded to login server)
-		case 0x2b0e: chmapif_parse_fwlog_changestatus(fd,id); break;
-		// Update and send fame ranking list
-		case 0x2b10: chmapif_parse_updfamelist(fd,id); break;
-		// Divorce chars
-		case 0x2b11: chmapif_parse_reqdivorce(fd,id); break;
-		// Receive rates [Wizputer]
-		case 0x2b16: chmapif_parse_updmapinfo(fd,id); break;
-		// Character disconnected set online 0 [Wizputer]
-		case 0x2b17: chmapif_parse_setcharoffline(fd,id); break;
-		// Reset all chars to offline [Wizputer]
+		case 0x2b02: chmapif_parse_authok(fd); break;
+		case 0x2b05: chmapif_parse_reqchangemapserv(fd); break;
+		case 0x2b07: chmapif_parse_askrmfriend(fd); break;
+		case 0x2b08: chmapif_parse_reqcharname(fd); break;
+		case 0x2b0c: chmapif_parse_reqnewemail(fd); break;
+		case 0x2b0e: chmapif_parse_fwlog_changestatus(fd); break;
+		case 0x2b10: chmapif_parse_updfamelist(fd); break;
+		case 0x2b11: chmapif_parse_reqdivorce(fd); break;
+		case 0x2b16: chmapif_parse_updmapinfo(fd); break;
+		case 0x2b17: chmapif_parse_setcharoffline(fd); break;
 		case 0x2b18: chmapif_parse_setalloffline(fd,id); break;
-		// Character set online [Wizputer]
 		case 0x2b19: chmapif_parse_setcharonline(fd,id); break;
-		// Build and send fame ranking lists [DracoRPG]
-		case 0x2b1a: chmapif_parse_reqfamelist(fd,id); break;
-		//Request to save status change data. [Skotlex]
-		case 0x2b1c: chmapif_parse_save_scdata(fd,id); break;
-		// map-server alive packet
-		case 0x2b23: chmapif_parse_keepalive(fd,id); break;
-		// auth request from map-server
+		case 0x2b1a: chmapif_parse_reqfamelist(fd); break;
+		case 0x2b1c: chmapif_parse_save_scdata(fd); break;
+		case 0x2b23: chmapif_parse_keepalive(fd); break;
 		case 0x2b26: chmapif_parse_reqauth(fd,id); break;
-		// ip address update
 		case 0x2736: chmapif_parse_updmapip(fd,id); break;
-		// transmit emu usage for anom stats
-		case 0x3008: chmapif_parse_fw_configstats(fd,id); break;
+		case 0x3008: chmapif_parse_fw_configstats(fd); break;
 		default:
 		{
 			// inter server - packet
@@ -931,7 +1101,7 @@ int chmapif_parse(int fd){
 		} // switch
 	} // while
 
-	return 0;
+	return 1;
 }
 
 
@@ -940,46 +1110,60 @@ int chmapif_init(int fd){
 	return inter_mapif_init(fd);
 }
 
-/// Initializes a server structure.
+/**
+ * Initializes a server structure.
+ * @param id: id of map-serv (should be >0, FIXME)
+ */
 void chmapif_server_init(int id) {
-	memset(&server[id], 0, sizeof(server[id]));
-	server[id].fd = -1;
+	memset(&map_server[id], 0, sizeof(map_server[id]));
+	map_server[id].fd = -1;
 }
 
-/// Destroys a server structure.
+/**
+ * Destroys a server structure.
+ * @param id: id of map-serv (should be >0, FIXME)
+ */
 void chmapif_server_destroy(int id){
-	if( server[id].fd == -1 ){
-		do_close(server[id].fd);
-		server[id].fd = -1;
+	if( map_server[id].fd == -1 ){
+		do_close(map_server[id].fd);
+		map_server[id].fd = -1;
 	}
 }
 
+/**
+ * chmapif constructor
+ *  Initialisation, function called at start of the char-serv.
+ */
 void do_init_chmapif(void){
 	int i;
-	for( i = 0; i < ARRAYLENGTH(server); ++i )
+	for( i = 0; i < ARRAYLENGTH(map_server); ++i )
 		chmapif_server_init(i);
 }
 
-/// Resets all the data related to a server.
+/**
+ * Resets all the data related to a server.
+ *  Actually destroys then recreates the struct.
+ * @param id: id of map-serv (should be >0, FIXME)
+ */
 void chmapif_server_reset(int id){
 	int i,j;
 	unsigned char buf[16384];
-	int fd = server[id].fd;
+	int fd = map_server[id].fd;
 	DBMap* online_char_db = char_get_onlinedb();
 
 	//Notify other map servers that this one is gone. [Skotlex]
 	WBUFW(buf,0) = 0x2b20;
-	WBUFL(buf,4) = htonl(server[id].ip);
-	WBUFW(buf,8) = htons(server[id].port);
+	WBUFL(buf,4) = htonl(map_server[id].ip);
+	WBUFW(buf,8) = htons(map_server[id].port);
 	j = 0;
 	for(i = 0; i < MAX_MAP_PER_SERVER; i++)
-		if (server[id].map[i])
-			WBUFW(buf,10+(j++)*4) = server[id].map[i];
+		if (map_server[id].map[i])
+			WBUFW(buf,10+(j++)*4) = map_server[id].map[i];
 	if (j > 0) {
 		WBUFW(buf,2) = j * 4 + 10;
 		chmapif_sendallwos(fd, buf, WBUFW(buf,2));
 	}
-	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `index`='%d'", schema_config.ragsrvinfo_db, server[id].fd) )
+	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `index`='%d'", schema_config.ragsrvinfo_db, map_server[id].fd) )
 		Sql_ShowDebug(sql_handle);
 	online_char_db->foreach(online_char_db,char_db_setoffline,id); //Tag relevant chars as 'in disconnected' server.
 	chmapif_server_destroy(id);
@@ -987,16 +1171,22 @@ void chmapif_server_reset(int id){
 }
 
 
-/// Called when the connection to a Map Server is disconnected.
+/**
+ * Called when the connection to Map Server is disconnected.
+ * @param id: id of map-serv (should be >0, FIXME)
+ */
 void chmapif_on_disconnect(int id){
 	ShowStatus("Map-server #%d has disconnected.\n", id);
 	chmapif_server_reset(id);
 }
 
 
-
+/**
+ * chmapif destructor
+ *  dealloc..., function called at exit of the char-serv
+ */
 void do_final_chmapif(void){
 	int i;
-	for( i = 0; i < ARRAYLENGTH(server); ++i )
+	for( i = 0; i < ARRAYLENGTH(map_server); ++i )
 		chmapif_server_destroy(i);
 }

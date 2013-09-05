@@ -42,7 +42,7 @@ int login_fd; //login file descriptor
 int char_fd; //char file descriptor
 struct Schema_Config schema_config;
 struct CharServ_Config charserv_config;
-struct mmo_map_server server[MAX_MAP_SERVERS];
+struct mmo_map_server map_server[MAX_MAP_SERVERS];
 //Custom limits for the fame lists. [Skotlex]
 int fame_list_size_chemist;
 int fame_list_size_smith;
@@ -102,8 +102,8 @@ void char_set_charselect(int account_id) {
 	character = (struct online_char_data*)idb_ensure(online_char_db, account_id, char_create_online_data);
 
 	if( character->server > -1 )
-		if( server[character->server].users > 0 ) // Prevent this value from going negative.
-			server[character->server].users--;
+		if( map_server[character->server].users > 0 ) // Prevent this value from going negative.
+			map_server[character->server].users--;
 
 	character->char_id = -1;
 	character->server = -1;
@@ -131,7 +131,7 @@ void char_set_char_online(int map_id, int char_id, int account_id) {
 	{
 		ShowNotice("set_char_online: Character %d:%d marked in map server %d, but map server %d claims to have (%d:%d) online!\n",
 			character->account_id, character->char_id, character->server, map_id, account_id, char_id);
-		mapif_disconnectplayer(server[character->server].fd, character->account_id, character->char_id, 2);
+		mapif_disconnectplayer(map_server[character->server].fd, character->account_id, character->char_id, 2);
 	}
 
 	//Update state data
@@ -139,7 +139,7 @@ void char_set_char_online(int map_id, int char_id, int account_id) {
 	character->server = map_id;
 
 	if( character->server > -1 )
-		server[character->server].users++;
+		map_server[character->server].users++;
 
 	//Get rid of disconnect timer
 	if(character->waiting_disconnect != INVALID_TIMER) {
@@ -177,8 +177,8 @@ void char_set_char_offline(int char_id, int account_id){
 	if ((character = (struct online_char_data*)idb_get(online_char_db, account_id)) != NULL)
 	{	//We don't free yet to avoid aCalloc/aFree spamming during char change. [Skotlex]
 		if( character->server > -1 )
-			if( server[character->server].users > 0 ) // Prevent this value from going negative.
-				server[character->server].users--;
+			if( map_server[character->server].users > 0 ) // Prevent this value from going negative.
+				map_server[character->server].users--;
 
 		if(character->waiting_disconnect != INVALID_TIMER){
 			delete_timer(character->waiting_disconnect, char_chardb_waiting_disconnect);
@@ -232,7 +232,7 @@ static int char_db_kickoffline(DBKey key, DBData *data, va_list ap){
 
 	//Kick out any connected characters, and set them offline as appropriate.
 	if (character->server > -1)
-		mapif_disconnectplayer(server[character->server].fd, character->account_id, character->char_id, 1);
+		mapif_disconnectplayer(map_server[character->server].fd, character->account_id, character->char_id, 1);
 	else if (character->waiting_disconnect == INVALID_TIMER)
 		char_set_char_offline(character->char_id, character->account_id);
 	else
@@ -1617,17 +1617,18 @@ int char_delete_char_sql(int char_id){
 	return 0;
 }
 
-//---------------------------------------------------------------------
-// This function return the number of online players in all map-servers
-//---------------------------------------------------------------------
+/**
+ * This function parse all map-serv attached to this char-serv and increase user count
+ * @return numbers of total users
+ */
 int char_count_users(void)
 {
 	int i, users;
 
 	users = 0;
-	for(i = 0; i < ARRAYLENGTH(server); i++) {
-		if (server[i].fd > 0) {
-			users += server[i].users;
+	for(i = 0; i < ARRAYLENGTH(map_server); i++) {
+		if (map_server[i].fd > 0) {
+			users += map_server[i].users;
 		}
 	}
 	return users;
@@ -1807,7 +1808,7 @@ void char_auth_ok(int fd, struct char_session_data *sd) {
 	{	// check if character is not online already. [Skotlex]
 		if (character->server > -1)
 		{	//Character already online. KICK KICK KICK
-			mapif_disconnectplayer(server[character->server].fd, character->account_id, character->char_id, 2);
+			mapif_disconnectplayer(map_server[character->server].fd, character->account_id, character->char_id, 2);
 			if (character->waiting_disconnect == INVALID_TIMER)
 				character->waiting_disconnect = add_timer(gettick()+20000, char_chardb_waiting_disconnect, character->account_id, 0);
 			chclif_send_auth_result(fd,8);
@@ -1917,14 +1918,14 @@ int char_loadName(int char_id, char* name){
 int char_search_mapserver(unsigned short map, uint32 ip, uint16 port){
 	int i, j;
 
-	for(i = 0; i < ARRAYLENGTH(server); i++)
+	for(i = 0; i < ARRAYLENGTH(map_server); i++)
 	{
-		if (server[i].fd > 0
-		&& (ip == (uint32)-1 || server[i].ip == ip)
-		&& (port == (uint16)-1 || server[i].port == port))
+		if (map_server[i].fd > 0
+		&& (ip == (uint32)-1 || map_server[i].ip == ip)
+		&& (port == (uint16)-1 || map_server[i].port == port))
 		{
-			for (j = 0; server[i].map[j]; j++)
-				if (server[i].map[j] == map)
+			for (j = 0; map_server[i].map[j]; j++)
+				if (map_server[i].map[j] == map)
 					return i;
 		}
 	}
@@ -2534,7 +2535,7 @@ void do_shutdown(void) {
 		runflag = CHARSERVER_ST_SHUTDOWN;
 		ShowStatus("Shutting down...\n");
 		// TODO proper shutdown procedure; wait for acks?, kick all characters, ... [FlavoJS]
-		for( id = 0; id < ARRAYLENGTH(server); ++id )
+		for( id = 0; id < ARRAYLENGTH(map_server); ++id )
 			chmapif_server_reset(id);
 		chlogif_check_shutdown();
 		flush_fifos();
