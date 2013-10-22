@@ -1148,11 +1148,6 @@ bool pc_authok(struct map_session_data *sd, int login_id2, time_t expiration_tim
 	}
 
 	/**
-	 * Check if player have any cool downs on
-	 **/
-	skill_cooldown_load(sd);
-
-	/**
 	 * Check if player have any item cooldowns on
 	 **/
 	pc_itemcd_do(sd,true);
@@ -1246,20 +1241,20 @@ int pc_reg_received(struct map_session_data *sd)
 	}
 
 	if ((i = pc_checkskill(sd,RG_PLAGIARISM)) > 0) {
-		sd->cloneskill_id = pc_readglobalreg(sd,"CLONE_SKILL");
+		sd->cloneskill_id = pc_readglobalreg(sd,SKILL_VAR_PLAGIARISM);
 		if (sd->cloneskill_id > 0) {
 			sd->status.skill[sd->cloneskill_id].id = sd->cloneskill_id;
-			sd->status.skill[sd->cloneskill_id].lv = pc_readglobalreg(sd,"CLONE_SKILL_LV");
+			sd->status.skill[sd->cloneskill_id].lv = pc_readglobalreg(sd,SKILL_VAR_PLAGIARISM_LV);
 			if (sd->status.skill[sd->cloneskill_id].lv > i)
 				sd->status.skill[sd->cloneskill_id].lv = i;
 			sd->status.skill[sd->cloneskill_id].flag = SKILL_FLAG_PLAGIARIZED;
 		}
 	}
 	if ((i = pc_checkskill(sd,SC_REPRODUCE)) > 0) {
-		sd->reproduceskill_id = pc_readglobalreg(sd,"REPRODUCE_SKILL");
+		sd->reproduceskill_id = pc_readglobalreg(sd,SKILL_VAR_REPRODUCE);
 		if( sd->reproduceskill_id > 0) {
 			sd->status.skill[sd->reproduceskill_id].id = sd->reproduceskill_id;
-			sd->status.skill[sd->reproduceskill_id].lv = pc_readglobalreg(sd,"REPRODUCE_SKILL_LV");
+			sd->status.skill[sd->reproduceskill_id].lv = pc_readglobalreg(sd,SKILL_VAR_REPRODUCE_LV);
 			if( i < sd->status.skill[sd->reproduceskill_id].lv)
 				sd->status.skill[sd->reproduceskill_id].lv = i;
 			sd->status.skill[sd->reproduceskill_id].flag = SKILL_FLAG_PLAGIARIZED;
@@ -1296,7 +1291,7 @@ int pc_reg_received(struct map_session_data *sd)
 
 	status_calc_pc(sd,1);
 	chrif_scdata_request(sd->status.account_id, sd->status.char_id);
-
+	chrif_skillcooldown_request(sd->status.account_id, sd->status.char_id);
 	intif_Mail_requestinbox(sd->status.char_id, 0); // MAIL SYSTEM - Request Mail Inbox
 	intif_request_questlog(sd);
 
@@ -4548,7 +4543,7 @@ int pc_cart_additem(struct map_session_data *sd,struct item *item_data,int amoun
 	if( i < MAX_CART )
 	{// item already in cart, stack it
 		if( amount > MAX_AMOUNT - sd->status.cart[i].amount || ( data->stack.cart && amount > data->stack.amount - sd->status.cart[i].amount ) )
-			return 1; // no room
+			return 2; // no slot
 
 		sd->status.cart[i].amount+=amount;
 		clif_cart_additem(sd,i,amount,0);
@@ -4557,7 +4552,7 @@ int pc_cart_additem(struct map_session_data *sd,struct item *item_data,int amoun
 	{// item not stackable or not present, add it
 		ARR_FIND( 0, MAX_CART, i, sd->status.cart[i].nameid == 0 );
 		if( i == MAX_CART )
-			return 1; // no room
+			return 2; // no slot
 
 		memcpy(&sd->status.cart[i],item_data,sizeof(sd->status.cart[0]));
 		sd->status.cart[i].amount=amount;
@@ -4612,6 +4607,7 @@ int pc_cart_delitem(struct map_session_data *sd,int n,int amount,int type,e_log_
 int pc_putitemtocart(struct map_session_data *sd,int idx,int amount)
 {
 	struct item *item_data;
+	short flag;
 
 	nullpo_ret(sd);
 
@@ -4623,10 +4619,10 @@ int pc_putitemtocart(struct map_session_data *sd,int idx,int amount)
 	if( item_data->nameid == 0 || amount < 1 || item_data->amount < amount || sd->state.vending )
 		return 1;
 
-	if( pc_cart_additem(sd,item_data,amount,LOG_TYPE_NONE) == 0 )
+	if( (flag = pc_cart_additem(sd,item_data,amount,LOG_TYPE_NONE)) == 0 )
 		return pc_delitem(sd,idx,amount,0,5,LOG_TYPE_NONE);
 
-	return 1;
+	return flag;
 }
 
 /*==========================================
@@ -4888,10 +4884,10 @@ int pc_setpos(struct map_session_data* sd, unsigned short mapindex, int x, int y
 			status_change_end(&sd->bl, SC_CLOAKING, INVALID_TIMER);
 			status_change_end(&sd->bl, SC_CLOAKINGEXCEED, INVALID_TIMER);
 		}
-		for (i = 0; i < EQI_MAX; i++) {
-			if (sd->equip_index[i] >= 0)
-				if (!pc_isequip(sd,sd->equip_index[i]))
-					pc_unequipitem(sd,sd->equip_index[i],2);
+		for( i = 0; i < EQI_MAX; i++ ) {
+			if( sd->equip_index[ i ] >= 0 )
+				if( !pc_isequip( sd , sd->equip_index[ i ] ) )
+					pc_unequipitem( sd , sd->equip_index[ i ] , 2 );
 		}
 		if (battle_config.clear_unit_onwarp&BL_PC)
 			skill_clear_unitgroup(&sd->bl);
@@ -5180,6 +5176,22 @@ int pc_checkequip(struct map_session_data *sd,int pos)
 	}
 
 	return -1;
+}
+
+/*==========================================
+ * Check if sd as nameid equiped somewhere
+ * -return true,false
+ *------------------------------------------*/
+int pc_checkequip2(struct map_session_data *sd,int nameid){
+	int i;
+	for(i=0;i<EQI_MAX;i++){
+		if(equip_pos[i]){
+			int idx = sd->equip_index[i];
+			if (sd->status.inventory[idx].nameid == nameid)
+				return true;
+		}
+	}
+	return false;
 }
 
 /*==========================================
@@ -7550,8 +7562,8 @@ int pc_jobchange(struct map_session_data *sd,int job, int upper)
 			clif_deleteskill(sd,sd->cloneskill_id);
 		}
 		sd->cloneskill_id = 0;
-		pc_setglobalreg(sd, "CLONE_SKILL", 0);
-		pc_setglobalreg(sd, "CLONE_SKILL_LV", 0);
+		pc_setglobalreg(sd,SKILL_VAR_PLAGIARISM, 0);
+		pc_setglobalreg(sd,SKILL_VAR_PLAGIARISM_LV, 0);
 	}
 
 	if(sd->reproduceskill_id) {
@@ -7562,8 +7574,8 @@ int pc_jobchange(struct map_session_data *sd,int job, int upper)
 			clif_deleteskill(sd,sd->reproduceskill_id);
 		}
 		sd->reproduceskill_id = 0;
-		pc_setglobalreg(sd, "REPRODUCE_SKILL",0);
-		pc_setglobalreg(sd, "REPRODUCE_SKILL_LV",0);
+		pc_setglobalreg(sd,SKILL_VAR_REPRODUCE,0);
+		pc_setglobalreg(sd,SKILL_VAR_REPRODUCE_LV,0);
 	}
 
 	// Give or reduce transcendent status points
@@ -9033,8 +9045,7 @@ int pc_checkitem(struct map_session_data *sd)
 	}
 
 	for( i = 0; i < MAX_INVENTORY; i++) {
-
-		if( sd->status.inventory[i].nameid == 0 )
+		if( !(&sd->status.inventory[i]) || sd->status.inventory[i].nameid == 0 )
 			continue;
 
 		if( !sd->status.inventory[i].equip )
@@ -9046,6 +9057,11 @@ int pc_checkitem(struct map_session_data *sd)
 			continue;
 		}
 
+		if( !pc_has_permission(sd, PC_PERM_USE_ALL_EQUIPMENT) && !battle_config.allow_equip_restricted_item && itemdb_isNoEquip(sd->inventory_data[i], sd->bl.m) ) {
+			pc_unequipitem(sd, i, 2);
+			calc_flag = 1;
+			continue;
+		}
 	}
 
 	if( calc_flag && sd->state.active ) {
@@ -9448,11 +9464,18 @@ void pc_overheat(struct map_session_data *sd, int val) {
  */
 bool pc_isautolooting(struct map_session_data *sd, int nameid)
 {
-	int i;
-	if( !sd->state.autolooting )
+	uint8 i = 0;
+	bool j = false;
+
+	if (!sd->state.autolooting && !sd->state.autolootingtype)
 		return false;
-	ARR_FIND(0, AUTOLOOTITEM_SIZE, i, sd->state.autolootid[i] == nameid);
-	return (i != AUTOLOOTITEM_SIZE);
+
+	if (sd->state.autolooting)
+		ARR_FIND(0, AUTOLOOTITEM_SIZE, i, sd->state.autolootid[i] == nameid);
+	if (sd->state.autolootingtype && sd->state.autoloottype&(1<<itemdb_type(nameid)))
+		j = true;
+
+	return (i != AUTOLOOTITEM_SIZE || j );
 }
 
 /**
@@ -9753,6 +9776,9 @@ static bool pc_readdb_levelpenalty(char* fields[], int columns, int current)
 static bool pc_readdb_job1(char* fields[], int columns, int current){
 	int idx, class_;
 	unsigned int i;
+#ifndef HP_SP_TABLES
+	unsigned int k = 0, val;
+#endif
 
 	class_ = atoi(fields[0]);
 
@@ -9775,6 +9801,20 @@ static bool pc_readdb_job1(char* fields[], int columns, int current){
 	{
 		job_info[idx].aspd_base[i] = atoi(fields[i+5]);
 	}
+
+#ifndef HP_SP_TABLES
+	for(i = 0; i <= MAX_LEVEL; i++) {
+		k += (job_info[idx].hp_factor*(i+1) + 50) / 100;
+		val = 35 + ((i+1)*job_info[idx].hp_multiplicator)/100 + k;
+		val = min(INT_MAX,val);
+		job_info[idx].hp_table[i] = val;
+	}
+	for(i = 0; i <= MAX_LEVEL; i++) {
+		val = 10 + ((i+1)*job_info[idx].sp_factor)/100;
+		val = min(INT_MAX,val);
+		job_info[idx].sp_table[i] = val;
+	}
+#endif
 	return true;
 }
 
@@ -9801,6 +9841,7 @@ static bool pc_readdb_job2(char* fields[], int columns, int current)
 
 //Reading job_maxhpsp.txt line
 //startlvl,maxlvl,class,type,values...
+#ifdef HP_SP_TABLES
 static bool pc_readdb_job_maxhpsp(char* fields[], int columns, int current)
 {
 	int idx, i,j, maxlvl, startlvl;
@@ -9826,6 +9867,7 @@ static bool pc_readdb_job_maxhpsp(char* fields[], int columns, int current)
 		ShowError("pc_readdb_job_maxhpsp: Invalid type %d specified.\n", type);
 		return false;
 	}
+
 	job_count = pc_split_atoi(fields[2],jobs,':',CLASS_COUNT);
 	if (job_count < 1)
 		return false;
@@ -9837,8 +9879,7 @@ static bool pc_readdb_job_maxhpsp(char* fields[], int columns, int current)
 		}
 		idx = pc_class2idx(job_id);
 		if(type == 0) {	//hp type
-			unsigned int k = 0;
-			unsigned int val, oldval=0;
+			unsigned int k = 0, val, oldval=0;
 			short level = 0;
 			for(i = 0; i <= MAX_LEVEL; i++) {
 				val = 0;
@@ -9885,6 +9926,7 @@ static bool pc_readdb_job_maxhpsp(char* fields[], int columns, int current)
 	}
 	return true;
 }
+#endif
 
 //Reading job_exp.txt line
 //Max Level,Class list,Type (0 - Base Exp; 1 - Job Exp),Exp/lvl...
@@ -10034,7 +10076,9 @@ int pc_readdb(void)
 	sv_readdb(db_path, "pre-re/job_db1.txt",',',5+MAX_WEAPON_TYPE,5+MAX_WEAPON_TYPE,CLASS_COUNT,&pc_readdb_job1);
 #endif
 	sv_readdb(db_path, "job_db2.txt",',',1,1+MAX_LEVEL,CLASS_COUNT,&pc_readdb_job2);
+#ifdef HP_SP_TABLES
 	sv_readdb(db_path, DBPATH"job_maxhpsp_db.txt", ',', 4, 4+MAX_LEVEL, CLASS_COUNT*2, &pc_readdb_job_maxhpsp);
+#endif
 	sv_readdb(db_path, DBPATH"job_exp.txt",',',4,1000+3,CLASS_COUNT*2,&pc_readdb_job_exp); //support till 1000lvl
 	
 	//Checking if all class have their data

@@ -4,6 +4,8 @@
 #ifndef MSG_CONF_H
 #define	MSG_CONF_H
 
+#include "../common/cbasetypes.h"
+
 #ifdef	__cplusplus
 extern "C" {
 #endif

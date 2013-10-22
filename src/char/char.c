@@ -1693,7 +1693,7 @@ int char_mmo_char_tobuf(uint8* buffer, struct mmo_charstatus* p)
 	offset += MAP_NAME_LENGTH_EXT;
 #endif
 #if PACKETVER >= 20100803
-	WBUFL(buf,124) = TOL(p->delete_date);
+	WBUFL(buf,124) = (p->delete_date?TOL(p->delete_date-time(NULL)):0);
 	offset += 4;
 #endif
 #if PACKETVER >= 20110111
@@ -1952,6 +1952,7 @@ int lan_subnetcheck(uint32 ip){
 
 
 
+
 int char_broadcast_user_count(int tid, unsigned int tick, int id, intptr_t data){
 	int users = char_count_users();
 
@@ -2110,8 +2111,7 @@ void char_sql_config_read(const char* cfgName) {
 		return;
 	}
 
-	while(fgets(line, sizeof(line), fp))
-	{
+	while(fgets(line, sizeof(line), fp)) {
 		if(line[0] == '/' && line[1] == '/')
 			continue;
 
@@ -2122,6 +2122,8 @@ void char_sql_config_read(const char* cfgName) {
 			safestrncpy(schema_config.char_db, w2, sizeof(schema_config.char_db));
 		else if(!strcmpi(w1,"scdata_db"))
 			safestrncpy(schema_config.scdata_db, w2, sizeof(schema_config.scdata_db));
+		else if(!strcmpi(w1,"skillcooldown_db"))
+			safestrncpy(schema_config.skillcooldown_db, w2, sizeof(schema_config.skillcooldown_db));
 		else if(!strcmpi(w1,"cart_db"))
 			safestrncpy(schema_config.cart_db, w2, sizeof(schema_config.cart_db));
 		else if(!strcmpi(w1,"inventory_db"))
@@ -2176,6 +2178,8 @@ void char_sql_config_read(const char* cfgName) {
 			safestrncpy(schema_config.mercenary_db,w2,sizeof(schema_config.mercenary_db));
 		else if(!strcmpi(w1,"mercenary_owner_db"))
 			safestrncpy(schema_config.mercenary_owner_db,w2,sizeof(schema_config.mercenary_owner_db));
+		else if(!strcmpi(w1,"elemental_db"))
+			safestrncpy(schema_config.elemental_db,w2,sizeof(schema_config.elemental_db));
 		//support the import command, just like any other config
 		else if(!strcmpi(w1,"import"))
 			char_sql_config_read(w2);

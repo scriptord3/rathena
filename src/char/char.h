@@ -4,6 +4,8 @@
 #ifndef _CHAR_SQL_H_
 #define _CHAR_SQL_H_
 
+#define DB_NAME_LEN 256 //max len of dbs
+
 #include "../config/core.h"
 #include "../common/core.h" // CORE_ST_LAST
 #include "../common/msg_conf.h"
@@ -29,36 +31,38 @@ enum {
 struct Schema_Config {
 	int db_use_sqldbs;
 	char db_path[1024];
-	char char_db[256];
-	char scdata_db[256];
-	char cart_db[256];
-	char inventory_db[256];
-	char charlog_db[256];
-	char storage_db[256];
-	char interlog_db[256];
-	char reg_db[256];
-	char skill_db[256];
-	char memo_db[256];
-	char guild_db[256];
-	char guild_alliance_db[256];
-	char guild_castle_db[256];
-	char guild_expulsion_db[256];
-	char guild_member_db[256];
-	char guild_position_db[256];
-	char guild_skill_db[256];
-	char guild_storage_db[256];
-	char party_db[256];
-	char pet_db[256];
-	char mail_db[256]; // MAIL SYSTEM
-	char auction_db[256]; // Auctions System
-	char friend_db[256];
-	char hotkey_db[256];
-	char quest_db[256];
-	char homunculus_db[256];
-	char skill_homunculus_db[256];
-	char mercenary_db[256];
-	char mercenary_owner_db[256];
-	char ragsrvinfo_db[256];
+	char char_db[DB_NAME_LEN];
+	char scdata_db[DB_NAME_LEN];
+	char skillcooldown_db[DB_NAME_LEN];
+	char cart_db[DB_NAME_LEN];
+	char inventory_db[DB_NAME_LEN];
+	char charlog_db[DB_NAME_LEN];
+	char storage_db[DB_NAME_LEN];
+	char interlog_db[DB_NAME_LEN];
+	char reg_db[DB_NAME_LEN];
+	char skill_db[DB_NAME_LEN];
+	char memo_db[DB_NAME_LEN];
+	char guild_db[DB_NAME_LEN];
+	char guild_alliance_db[DB_NAME_LEN];
+	char guild_castle_db[DB_NAME_LEN];
+	char guild_expulsion_db[DB_NAME_LEN];
+	char guild_member_db[DB_NAME_LEN];
+	char guild_position_db[DB_NAME_LEN];
+	char guild_skill_db[DB_NAME_LEN];
+	char guild_storage_db[DB_NAME_LEN];
+	char party_db[DB_NAME_LEN];
+	char pet_db[DB_NAME_LEN];
+	char mail_db[DB_NAME_LEN]; // MAIL SYSTEM
+	char auction_db[DB_NAME_LEN]; // Auctions System
+	char friend_db[DB_NAME_LEN];
+	char hotkey_db[DB_NAME_LEN];
+	char quest_db[DB_NAME_LEN];
+	char homunculus_db[DB_NAME_LEN];
+	char skill_homunculus_db[DB_NAME_LEN];
+	char mercenary_db[DB_NAME_LEN];
+	char mercenary_owner_db[DB_NAME_LEN];
+	char ragsrvinfo_db[DB_NAME_LEN];
+	char elemental_db[DB_NAME_LEN];
 };
 extern struct Schema_Config schema_config;
 
@@ -250,5 +254,6 @@ int char_make_new_char_sql(struct char_session_data* sd, char* name_, int str, i
 int char_msg_config_read(char *cfgName);
 const char* char_msg_txt(int msg_number);
 void char_do_final_msg(void);
+
 
 #endif /* _CHAR_SQL_H_ */
